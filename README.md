@@ -23,18 +23,18 @@ Thanks Christophe Rougeaux for helping correct the binomial model errors!
 0.0500000002
 ```
 
-* **MacD/ModD** - returns the Macaulay duration/Modified duration of a series of cash flows
+* **macD/modD** - returns the Macaulay duration/Modified duration of a series of cash flows
 ```python
->>> print MacD(cash_flows=[100, 200, 300], apr=.05, dt=.5)
+>>> print macD(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 1.15976846635
->>> print ModD(cash_flows=[100, 200, 300], apr=.05, dt=.5)
+>>> print modD(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 1.13148143058
 ```
 
 * **convexity** - returns the convexity of a series of cash flows
 ```python
 >>> print convexity(cash_flows=[100, 200, 300], apr=.05, dt=.5)
-1.4855291466
+1.96589018896
 ```
 
 ####Classes
@@ -108,7 +108,7 @@ my_loan = Amortize(int_rate=.05/12, num_payments=36, payment=250, future_value=0
 >>> my_bond.ytm()
 0.0388993771
 ```
-  * A summary can be seen with `info()`. The attributes `MacD`, `ModD`, and `convexity` are calculated upon
+  * A summary can be seen with `info()`. The attributes `macD`, `modD`, and `convexity` are calculated upon
   initialization and any change to price or ytm.
 ```python
 >>> my_bond.info()
@@ -116,11 +116,11 @@ Time to Expiry: 5               #my_bond.length
 Par Value:      $1000           #my_bond.par_value
 Coupon Rate:    5.0 percent     #my_bond.coupon_rate
 Annual Coupons: 2               #my_bond.num_annual_coupons
-Price:          $1050.0         #my_bond.price()
+Price:          $957.35         #my_bond.price()
 YTM:            6.0 percent     #my_bond.ytm()
-MacD:           4.47167860758   #my_bond.MacD
-ModD:           4.34143554134   #my_bond.ModD
-Convexity:      21.4272466732   #my_bond.convexity
+macD:           4.47167860758   #my_bond.macD
+modD:           4.34143554134   #my_bond.modD
+Convexity:      22.3047280394   #my_bond.convexity
 ```
 
 * **Stock** - creates a stock object. Primarily used for option pricing. Use `info()` to view the attributes.
