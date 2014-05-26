@@ -1,28 +1,91 @@
 \documentclass[10pt]{article}
 \begin{document}
-\evensidemargin = 54pt
-\topmargin = 18pt
 \begin{center}
-    {\bfseries\Huge PyFi Methodology}\\
+    {\bfseries\Huge PyFi Methodology}\\[20pt]
 \end{center}
 
 \begin{flushleft}
     This document is intended to provide an explanation of the methodology used in the PyFi package.
-    This will hopefully make review easier than trying to read code.
+    This will hopefully make review easier than trying to read code. This document isn't meant to
+    derive or justify any of the formulas or methods - this information can be found elsewhere.
 \end{flushleft}
 
-\section{Basic Financial Formulae}
+\section{Functions}
 \subsection*{Present/Future Value of Cash Flows}
-These calculations are performed in the \textbf{pv(.)} and \textbf{fv(.)} functions.\\
+\begin{itemize}
+\item \textbf{pv(.)} - returns the present value of a series of cash flows.\\
     \begin{equation}
         pv = \sum_{t=1}^n CF_t * (1 + (apr*dt))^{-t*dt}
     \end{equation}
-and\\
+    A few things should be noted about this formula:
+    \begin{itemize}
+    \item $CF$ is the cash flow list that's passed to the function. The code assumes the first cash flow
+        happens at $t=1$, so $CF_t$ would be \texttt{cash\_flows[t-1]}.
+    \item $apr$ is the nominal annual interest rate.
+    \item $n$ is the total number of cash flow periods. This is equivalent to the length of 
+        \texttt{cash\_flows}.
+    \item $dt$ is the time, in years, between cash flow periods. Note that $dt*n$ is the total number
+        of years that the cash flows cover.
+    \end{itemize}
+\item \textbf{fv(.)} - returns the future value by taking the pv, then bringing it forward in time.\\
     \begin{equation}
         fv = pv*(1 + (apr*dt))^{n}
     \end{equation}
-where $CF_t$ is the list of cash flows, $apr$ is the annual nominal interest rate, 
-$dt$ is the size of the time-step between cash flows, and $n$ is the number of periods. Note that 
-$T/n = dt$, so
+\end{itemize}
+\subsection*{Numerical Approaches}
+\begin{itemize}
+\item \textbf{irr(.)} - returns the internal rate of return of a series of cash flows. The IRR is
+    the $apr$ that satisfies\\
+    \begin{equation}
+        0 = pv = \sum_{t=1}^n CF_t * (1 + (apr*dt))^{-t*dt}
+    \end{equation}
+    This is achieved numerically by performing the following steps:
+    \begin{enumerate}
+    \item Guess an initial apr, and adjust by some factor (initially .1) in one direction 
+            until the $pv$ switches signs.
+    \item When the $pv$ switches signs, divide the adjusting factor by 10 then adjust in the direction
+        that brings the $pv$ closer to 0.
+    \item Repeat step 2 until $pv = 0$ or the $apr$ is found to 10 decimal places.
+    \end{enumerate}
+    Note that at least 1 cash flow must be of another sign than the others, or else
+    $apr = \infty$. All cash flows having the same sign will throw an exception.
+\end{itemize}
+\subsection*{Cash Flow Characteristics}
+\begin{itemize}
+\item \textbf{macD(.)} - returns the Macaulay duration of a series of cash flows. This is the
+    weighted average maturity of the cash flows.\\
+    \begin{equation}
+        pv_t = CF_t * (1 + (apr*dt))^{-t*dt}
+    \end{equation}
+    \begin{equation}
+        MacD = \sum_{t=1}^n \frac{(t*dt)*pv_t}{pv_t} = \frac{\sum_{t=1}^n (t*dt)*pv_t}{pv}
+    \end{equation}
+\item \textbf{modD(.)} - returns the Modified duration of a series of cash flows. This is the
+    percentage change in $pv$ for a percentage \emph{point} change in yield, or $apr$. 
+    Technically, it is given by\\
+    \begin{equation}
+        ModD = -\frac{1}{pv}*\frac{\partial pv}{\partial (apr*dt)}
+    \end{equation}
+    However, PyFi uses the following convenient relationship to find it:\\
+    \begin{equation}
+        ModD = \frac{MacD}{1+(apr*dt)}
+    \end{equation}
+\item \textbf{convexity(.)} - returns the convexity of a series of cash flows. This is defined as\\
+    \begin{equation}
+        Convexity = \frac{1}{pv} * \frac{\partial^2 pv}{\partial (apr*dt)^2}
+    \end{equation}
+    For PyFi's purposes, with periodic compounding, this formula becomes:\\
+    \begin{equation}
+        Convexity = \frac{\sum_{t=1}^n t*(t+1)*dt^2*w_t}{(1+(apr*dt))^2}
+    \end{equation}
+    where\\
+    \begin{equation}
+        w_t = \frac{pv_t}{pv}
+    \end{equation}
+    is the weight of each particular payment in the total $pv$. Note that in the code, the values
+    $t$ and $t+1$ in (9) are instead $t+1$ and $t+2$, due to the list indexing beginning at 0.
+
+\end{itemize}
+
 
 \end{document}
