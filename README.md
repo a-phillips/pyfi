@@ -133,7 +133,7 @@ Volatility: 10.0 percent
 
 * **Binomial Options** - creates an option. The option is priced using a binomial tree. See the docstring
 for each class for its specific use.
-  * Cox-Ross-Rubinstein - original and most popular binomial model -  EuropeanCRR/AmericanCRR/BermudanCRR
+  * Cox-Ross-Rubinstein - original binomial model -  EuropeanCRR/AmericanCRR/BermudanCRR
   * Jarrow-Rudd - equal probability binomial model - EuropeanJR/AmericanJR/BermudanJR
   * Tian - the "moment matching" binomial model - EuropeanTian/AmericanTian/BermudanTian
 ```python
