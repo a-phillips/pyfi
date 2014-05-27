@@ -17,10 +17,12 @@ Thanks Christophe Rougeaux for helping correct the binomial model errors!
 610.0625
 ```
 
-* **irr** - returns the internal rate of return on a series of cash flows
+* **irr/mirr** - returns the internal rate of return or modified irr on a series of cash flows
 ```python
 >>> print irr(cash_flows=[-566.503678, 100, 200, 300], dt=.5)
 0.0500000002
+>>> print mirr(inflows=[0, 0, 5000, 2000], outflows=[-1000, -4000], reinv_rate=.12, borrow_rate=.1)
+0.179085686035
 ```
 
 * **macD/modD** - returns the Macaulay duration/Modified duration of a series of cash flows
@@ -52,7 +54,7 @@ my_loan = Amortize(int_rate=.05/12, num_payments=36, payment=250, future_value=0
 >>> print my_loan.principal
 8341.42532094
 ```
-  * Display the amortization table using `print_table()`, and access the principal, interest, etc. in each period
+  * Display the amortization table using `print_table()`, and access the principal, interest, etc. in each period.
 ```python
 >>> my_loan = Amortize(principal=10000, int_rate=.05, num_payments=5, future_value=0)
 >>> my_loan.print_table()
@@ -70,7 +72,7 @@ my_loan = Amortize(int_rate=.05/12, num_payments=36, payment=250, future_value=0
 >>> my_loan.principal_remaining[3]
 2199.75
 ```
-  * Change attributes of the table, then calculate a parameter to update the table
+  * Change attributes of the table, then calculate a parameter to update the table.
 ```python
 >>> my_loan = Amortize(principal=10000, int_rate=.05, num_payments=5, future_value=0)
 >>> my_loan.print_table()
@@ -96,13 +98,13 @@ my_loan = Amortize(int_rate=.05/12, num_payments=36, payment=250, future_value=0
 ```
 * **Bond** - creates a bond object.
   * Specify the parameters of the bond then, either `price` or `ytm` to initialize the bond. Whichever isn't specified
-  can be seen using `ytm()` or `price()`
+  can be seen using `ytm()` or `price()`.
 ```python
 >>> my_bond = Bond(length=5, par_value=1000, coupon_rate=.05, num_annual_coupons=2, ytm=.06)
 >>> my_bond.price()
 957.348985816121
 ```
-  * Price and ytm can be updated with `price(new_price)` and `ytm(new_ytm)`
+  * Price and ytm can be updated with `price(new_price)` and `ytm(new_ytm)`.
 ```python
 >>> my_bond.price(1050)
 >>> my_bond.ytm()
