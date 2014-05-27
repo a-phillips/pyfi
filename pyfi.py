@@ -117,7 +117,7 @@ dt: size of the time step of the cash flows in years
         if (i+1) > count_pos and count_pos > 0: #some are positive, some negative
             break
     else:
-        raise Exception('Invaid cash flows - must contain both positive and negative elements.')
+        raise Exception('Invalid cash flows - must contain both positive and negative elements.')
 
     apr = 0.0
     #delta is used below as the step by which the guessed apr changes
@@ -149,6 +149,32 @@ dt: size of the time step of the cash flows in years
             #Guess is closer to 0 than previously and has not gone too far, so continue
             closest_pv = check_pv
     return apr
+
+
+def mirr(inflows, outflows, reinv_rate, borrow_rate, dt=1):
+    """Returns the Modified Internal Rate of Return on a series of cash inflows and outflows.
+
+inflows: list of cash inflows, all numbers must be positive
+outflows: list of cash outflows, all numbers must be negative. outflows[0] is assumed to happen at t0.
+reinv_rate: the apr at which inflows may be reinvested
+borrow_rate: the apr at which outflows must be borrowed at
+dt: the time step between cash flows"""
+
+    if not isinstance(inflows, list) or not isinstance(outflows, list):
+        raise Exception('Invalid type for cash flow lists. Must be a list')
+    if not all(inflows) >= 0 and all(outflows) <= 0:
+        raise Exception('Invalid cash flow values. All inflows must be >= 0 and all outflows must be <= 0')
+    if not isinstance(reinv_rate, float) or not isinstance(borrow_rate, float):
+        raise Exception('Invalid type for rates. Must be floats.')
+
+    n = max(len(inflows), len(outflows))-1
+    #need to time-shift outflows, since first payment is assumed to be at t0
+    if len(outflows) == 1:
+        pv_outflows = outflows[0]*-1
+    else:
+        pv_outflows = (outflows[0] + pv(outflows[1:], borrow_rate, dt))*-1
+    fv_inflows = fv(inflows, reinv_rate, dt)
+    return ((fv_inflows/pv_outflows)**(1.0/n))-1
 
 
 def macD(cash_flows, apr, dt):
@@ -466,6 +492,7 @@ sigma: Volatility of the stock. Must be a float."""
 #Binomial Options--------------------------------------------------------------------
 
 ###CRR-------------------------------------------------------------------------------
+
 
 class EuropeanCRR(object):
     """EuropeanCRR(S, K, T, n, r, q=0, call=True)
@@ -1276,13 +1303,11 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 #------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    my_bond = Bond(length=6,
-                   coupon_rate=.061,
-                   par_value=1000,
-                   num_annual_coupons=2,
-                   ytm=.1)
-    my_bond.info()
-
+    cfs = [-195, 121, 131]
+    cf_in = [0, 121, 131]
+    cf_out = [-195]
+    print irr(cfs)
+    print mirr(cf_in, cf_out, .12, .1)
 
 
 
