@@ -65,8 +65,7 @@ def irrReg(cash_flows, dt=1):
     it = 1
     while abs(delta) >= (10**(-10)):
         if closest_pv == 0:
-            print apr, '\t', it, '\t', time.time()-t0
-            break
+            return apr
         apr += delta
         check_pv = round(pv(cash_flows=cash_flows, apr=apr, dt=dt), 10)
         if abs(closest_pv-check_pv) > abs(closest_pv):
@@ -89,7 +88,7 @@ def irrReg(cash_flows, dt=1):
             closest_pv = check_pv
         it += 1
     else:
-        print apr, '\t', it, '\t', time.time()-t0
+        return apr
 
 
 
@@ -119,8 +118,7 @@ def irrBi(cash_flows, dt=1):
         c = (a+b)/2
         pv_c = round(pv(cash_flows, c, dt), 10)
         if pv_c == 0:
-            print round(c, 10), '\t', it, '\t', time.time()-t0
-            break
+            return round(c, 10)
         elif min(pv_a, pv_c) < 0 < max(pv_a, pv_c): #pv_a and pv_c have different signs
             b = c
             pv_b = pv_c
@@ -129,7 +127,7 @@ def irrBi(cash_flows, dt=1):
             pv_a = pv_c
         it += 1
     else:
-        print round(c, 10), '\t', it, '\t', time.time()-t0
+        return round(c, 10)
 
 
 def irrBoth(cash_flows, dt=1):
