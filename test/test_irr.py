@@ -1,6 +1,22 @@
 import time
 
-"""Results: prints cash flow, then each algo's result, # of iterations, and runtime
+"""New Results: trying to merge the two methods. It appears that adding the naive component makes the combined
+algorithm faster than the bisection method, but not faster than the regular. Over 1000 iterations of finding the irr
+for cash flows evenly spread over a wide range, we get:
+
+Min irr: -0.1367968778
+Max irr: 1.3981031821
+Both: 0.24269080162 seconds
+Bi: 0.247754812241 seconds
+Reg: 0.163642883301 seconds
+
+It looks like the naive method is considerably faster overall. I'm not sure why, since the search method seems pretty
+basic, but it probably has to do with the fact that the IRR will generally fall in a reasonable range. I'm okay with
+the algorithm taking longer for fringe cases while being much faster for more realistic cases.
+
+--------Old Results---------------------------------------------------------
+
+Results: prints cash flow, then each algo's result, # of iterations, and runtime
 
 Seems as though the naive algorithm is more efficient for more reasonable results, while the bisection method is
 much faster for much higher IRRs and extreme cases. Since I would expect actual use cases to be reasonable, the
@@ -203,28 +219,24 @@ def irrBoth(cash_flows, dt=1):
             return apr
 
 if __name__ == '__main__':
-    cash_flow_tests = [[-1000, 100, 10, 5, 3, 20, 15, 10, 10, 10, 100],
-                        [-1000, 1000, 10, 5, 3, 20, 15, 10, 10, 10, 100],
-                        [-1000, 10000, 10, 5, 3, 20, 15, 10, 10, 10, 100],
-                        [-1000, 100000, 10, 5, 3, 20, 15, 10, 10, 10, 100],
-                        [-100, 107],
-                        [-100, 1070],
-                        [-100, 10700],
-                        [-100, 50, -250, 1000, 300, 500, 200, -1],
-                        [-950, 20, 20, 20, 20, 20, 20, 20, 1020],
-                        [-950, 50, 50, 50, 50, 50, 50, 50, 10000]]
+    base_cf = [-950, 50, 50, 50, 50, 50, 50, 50]
+    cash_flow_tests = []
+    print 'Min irr: %s' % irrReg(base_cf+[90])
+    print 'Max irr: %s' % irrReg(base_cf+[90+(1000*1000)])
+    for i in xrange(1000):
+        cash_flow_tests.append(base_cf+[90+(1000*i)])
     t0 = time.time()
     for cf in cash_flow_tests:
-        irrReg(cf)
-    print 'Reg: %s' % (time.time()-t0)
+        irrBoth(cf)
+    print 'Both: %s' % (time.time()-t0)
     t0 = time.time()
     for cf in cash_flow_tests:
         irrBi(cf)
     print 'Bi: %s' % (time.time()-t0)
     t0 = time.time()
     for cf in cash_flow_tests:
-        irrBoth(cf)
-    print 'Both: %s' % (time.time()-t0)
+        irrReg(cf)
+    print 'Reg: %s' % (time.time()-t0)
 
 
 
