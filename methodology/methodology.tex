@@ -84,8 +84,36 @@
     \end{equation}
     is the weight of each particular payment in the total $pv$. Note that in the code, the values
     $t$ and $t+1$ in (9) are instead $t+1$ and $t+2$, due to the list indexing beginning at 0.
-
 \end{itemize}
+\subsection{Amortization}
+The \texttt{Amortize} class requires the user to enter 4 of the 5 necessary variables for the amortization
+of a loan, and the program calculates the remaining variable. Except for the interest rate calculation, all
+of the formulas are rearrangements of\\
+\begin{equation}
+    PV = PMT*\frac{1-(\frac{1}{1+i})^n}{i} + FV\left(\frac{1}{1+i}\right)^n
+\end{equation}
+Note that the multiplier for $PMT$ is the factor for an annuity-immediate of $n$ periods at rate $i$.
+\begin{itemize}
+    \item $PV$ is the present value. In this code, this is the variable \texttt{principal}. Formula (11)
+        shows how this value is calculated.
+    \item $PMT$ is the periodic payment. This value is fixed, with the last period sometimes being an
+        exception in order to meet the desired future value. This is calculated as follows:
+        \begin{equation}
+            PMT = \frac{PV-\frac{FV}{(1+i)^n}}{\frac{1-\frac{1}{(1+i)^n}}{i}}
+        \end{equation}
+    \item $FV$ is the future value, often set to 0.
+        \begin{equation}
+            FV = \frac{PV-PMT*\frac{1-(\frac{1}{1+i})^n}{i}}{\left(\frac{1}{1+i}\right)^n}
+        \end{equation}
+    \item $n$ is the number of payments, or the number of periods.
+        \begin{equation}
+            n = \frac{\ln(\frac{i*PV-PMT}{i*FV-PMT})}{\ln(\frac{1}{1+i})}
+        \end{equation}
+    \item $i$ is the interest rate. This is the rate as it applies to each period - \textbf{not}
+        the apr. This is calculated using the \textbf{irr(.)} function.
+\end{itemize}
+
+
 
 
 \end{document}
