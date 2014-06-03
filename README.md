@@ -138,6 +138,7 @@ for each class for its specific use.
   * Cox-Ross-Rubinstein - original binomial model -  EuropeanCRR/AmericanCRR/BermudanCRR
   * Jarrow-Rudd - equal probability binomial model - EuropeanJR/AmericanJR/BermudanJR
   * Tian - the "moment matching" binomial model - EuropeanTian/AmericanTian/BermudanTian
+  * For binary - EuropeanBinaryCRR, AmericanBinaryTian, etc.
 ```python
 >>> my_option = AmericanCRR(S=Stock(50, .3), K=50, T=1, n=4, r=.03, call=True)
 >>> my_option.print_tree() #Print option value tree and stock tree
