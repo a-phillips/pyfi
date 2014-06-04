@@ -117,7 +117,7 @@ def show_yahoo_codes(by_field=True):
         print '\n'.join(['%s: %s' % (code, get_yahoo_field[code]) for code in sorted_code_list])
 
 
-def get_data(symbols, codes=None):
+def get_current_data(symbols, codes=None):
     """get_data(symbols, codes=None)
 
 Retrieves stock data from Yahoo Finance. Quotes may be delayed up to 15 minutes.
@@ -283,6 +283,28 @@ y0  	0.67	            0.0067	        Trailing Annual Dividend Yield In Percent
     return data
 
 
+def get_historical_data(symbol, from_date, to_date, interval):
+    base_url = 'http://ichart.yahoo.com/table.csv?'
+    s = 's=%s&' % symbol
+    a = 'a=%s&' % str(from_date.month-1)
+    b = 'b=%s&' % str(from_date.day)
+    c = 'c=%s&' % str(from_date.year)
+    d = 'd=%s&' % str(to_date.month-1)
+    e = 'e=%s&' % str(to_date.day)
+    f = 'f=%s&' % str(to_date.year)
+    g = 'g=%s&' % interval
+    suffix = 'ignore=.csv'
+    total_url = base_url+s+a+b+c+d+e+f+g+suffix
+    raw_file = urllib2.urlopen(total_url).read().splitlines()
+    data = {'headers': raw_file[0].split(',')}
+    for line in raw_file[1:]:
+        line = line.split(',')
+        data_date = date(int(line[0][:4]), int(line[0][5:7]), int(line[0][8:]))
+        line = line[1:]
+        data[data_date] = [float(num) for num in line]
+    return data
+
+
 #--------------------------------------------------------------------------------
 # Code for formatting individual portions of each field
 #--------------------------------------------------------------------------------
@@ -395,6 +417,6 @@ def _format_l0(data, i):
 
 
 if __name__ == '__main__':
-    test_data = get_data(['HIG'], ['c0'])
-    for item in test_data['HIG']:
-        print item
+    test_data = get_historical_data('LUV', date(2014, 1, 1), date(2014, 6, 3), 'w')
+    print test_data['headers']
+    print test_data[date(2014, 5, 19)]
