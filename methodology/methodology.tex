@@ -11,7 +11,7 @@
 \end{flushleft}
 
 \section{Functions}
-\subsection*{Present/Future Value of Cash Flows}
+\subsection{Present/Future Value of Cash Flows}
 \begin{itemize}
 \item \textbf{pv(.)} - returns the present value of a series of cash flows.\\
     \begin{equation}
@@ -32,7 +32,7 @@
         fv = pv*(1 + (apr*dt))^{n}
     \end{equation}
 \end{itemize}
-\subsection*{Numerical Approaches}
+\subsection{Numerical Approaches}
 \begin{itemize}
 \item \textbf{irr(.)} - returns the internal rate of return of a series of cash flows. The IRR is
     the $apr$ that satisfies\\
@@ -50,7 +50,7 @@
     Note that at least 1 cash flow must be of another sign than the others, or else
     $apr = \infty$. All cash flows having the same sign will throw an exception.
 \end{itemize}
-\subsection*{Cash Flow Characteristics}
+\subsection{Cash Flow Characteristics}
 \begin{itemize}
 \item \textbf{macD(.)} - returns the Macaulay duration of a series of cash flows. This is the
     weighted average maturity of the cash flows.\\
@@ -112,6 +112,58 @@ Note that the multiplier for $PMT$ is the factor for an annuity-immediate of $n$
     \item $i$ is the interest rate. This is the rate as it applies to each period - \textbf{not}
         the apr. This is calculated using the \textbf{irr(.)} function.
 \end{itemize}
+
+
+\section{Option Pricing}
+\subsection{Binomial Trees}
+PyFi currently utilizes three main types of binomial modesl - CRR, Jarrow-Rudd, and Tian - for three
+types of options - European, American, and Bermudan. It also supports Binary options, by replacing the
+payoff formulas appropriately.\\
+\\
+The binomial models work by matching the moments of the model to the moments of the stock movement given that
+it is lognormal. The result is a system of two equations with three unknowns: $p^{*}$, $u$, and $d$.\\
+    \begin{equation}
+        p^{*}u+(1-p^{*})d = e^({r-q)\Delta t}
+    \end{equation}
+    \begin{equation}
+        p^{*}u^2 + (1-p^{*})d^2 = e^{2(r-q)\Delta t+\sigma^2\Delta t}
+    \end{equation}
+\\
+Each of the three models use a different third condition to solve the above.\\
+\\
+See http://www.mimuw.edu.pl/\~{}apalczew/CFP/\_lecture1.pdf for an easy and intuitive explanation of this system.\\
+\\
+The binomial tree algorithm used by PyFi is as follows:
+\begin{enumerate}
+    \item Find $u$, $d$, and $p^{*}$
+    \item Generate the stock price tree
+    \item Using the final nodes of the stock price tree, determine the option values at expiry
+    \item At each previous node, calculate the discounted risk-netutral expected value as
+        \begin{equation}
+            V = e^{(r-q)\Delta t}(p^{*}V_{u} + (1-p^{*})V_{d})
+        \end{equation}
+        where $V_{u}$ and $V_{d}$ are the option values at one up and down step from the node, respectively.
+    \item If early exercise is allowed, compare the option value with the exercise value and take the max.
+    \item Repeat steps 4-5 until the initial node price is calculated.
+\end{enumerate}
+
+\subsubsection{CRR}
+The Cox-Ross-Rubinstein model uses the following third equation:\\
+    \begin{equation}
+        u = d^{-1}
+    \end{equation}
+which results in the following solutions for the unknowns:
+    \begin{equation}
+        p^{*} = \frac{e^{r\Delta t}-d}{u-d}
+    \end{equation}
+    \begin{equation}
+        u = e^{\sigma\sqrt{\Delta t}}
+    \end{equation}
+    \begin{equation}
+        d = e^{-\sigma\sqrt{\Delta t}} = u^{-1}
+    \end{equation}
+
+
 
 
 
