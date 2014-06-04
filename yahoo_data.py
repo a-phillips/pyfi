@@ -394,11 +394,10 @@ def _format_l0(data, i):
     return data
 
 
-
-
-
 if __name__ == '__main__':
-    test_data = get_data(['LUV'])
+    test_data = get_data(['HIG'], ['c0'])
+    for item in test_data['HIG']:
+        print item
 
 
 
