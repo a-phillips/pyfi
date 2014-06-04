@@ -116,14 +116,14 @@ Note that the multiplier for $PMT$ is the factor for an annuity-immediate of $n$
 
 \section{Option Pricing}
 \subsection{Binomial Trees}
-PyFi currently utilizes three main types of binomial modesl - CRR, Jarrow-Rudd, and Tian - for three
+PyFi currently utilizes three main types of binomial models - CRR, Jarrow-Rudd, and Tian - for three
 types of options - European, American, and Bermudan. It also supports Binary options, by replacing the
 payoff formulas appropriately.\\
 \\
-The binomial models work by matching the moments of the model to the moments of the stock movement given that
+The binomial models are developed by matching the moments of the model to the moments of the stock movement given that
 it is lognormal. The result is a system of two equations with three unknowns: $p^{*}$, $u$, and $d$.\\
     \begin{equation}
-        p^{*}u+(1-p^{*})d = e^({r-q)\Delta t}
+        p^{*}u+(1-p^{*})d = e^{(r-q)\Delta t}
     \end{equation}
     \begin{equation}
         p^{*}u^2 + (1-p^{*})d^2 = e^{2(r-q)\Delta t+\sigma^2\Delta t}
@@ -140,7 +140,7 @@ The binomial tree algorithm used by PyFi is as follows:
     \item Using the final nodes of the stock price tree, determine the option values at expiry
     \item At each previous node, calculate the discounted risk-netutral expected value as
         \begin{equation}
-            V = e^{(r-q)\Delta t}(p^{*}V_{u} + (1-p^{*})V_{d})
+            V = e^{-(r-q)\Delta t}(p^{*}V_{u} + (1-p^{*})V_{d})
         \end{equation}
         where $V_{u}$ and $V_{d}$ are the option values at one up and down step from the node, respectively.
     \item If early exercise is allowed, compare the option value with the exercise value and take the max.
@@ -149,12 +149,10 @@ The binomial tree algorithm used by PyFi is as follows:
 
 \subsubsection{CRR}
 The Cox-Ross-Rubinstein model uses the following third equation:\\
-    \begin{equation}
-        u = d^{-1}
-    \end{equation}
+    \[u = d^{-1}\] \\
 which results in the following solutions for the unknowns:
     \begin{equation}
-        p^{*} = \frac{e^{r\Delta t}-d}{u-d}
+        p^{*} = \frac{e^{(r-q)\Delta t}-d}{u-d}
     \end{equation}
     \begin{equation}
         u = e^{\sigma\sqrt{\Delta t}}
@@ -162,6 +160,40 @@ which results in the following solutions for the unknowns:
     \begin{equation}
         d = e^{-\sigma\sqrt{\Delta t}} = u^{-1}
     \end{equation}
+Note that in the CRR model, $S_{ud}$ = $S_{du}$ = $S_{init}$ throughout the tree, making it symmetric.
+
+\subsubsection{Jarrow-Rudd (JR)}
+The Jarrow-Rudd model is often called the "equal probability" model, since it uses\\
+    \[p^{*} = \frac{1}{2}\] \\
+as the third equation to solve the system. The complete model is:
+    \begin{equation}
+        p^{*} = \frac{1}{2}
+    \end{equation}
+    \begin{equation}
+        u = e^{(r-q-\frac{1}{2}\sigma^{2})\Delta t+\sigma\sqrt{\Delta t}}
+    \end{equation}
+    \begin{equation}
+        d = e^{(r-q-\frac{1}{2}\sigma^{2})\Delta t-\sigma\sqrt{\Delta t}}
+    \end{equation}
+Note that since $ud \neq 1$, the tree is not symmetric.
+
+\subsubsection{Tian}
+The Tian model matches the third moment of the movement with the lognormal model, so the third equation is
+    \begin{equation}
+        p^{*}u^{3} + (1-p^{*})d^{3} = \left(e^{(r-q)\Delta t}\right)^{3}\left(e^{\sigma^{2}\Delta t}\right)^{3}
+    \end{equation}
+and allowing $X = e^{\sigma^{2}\Delta t}$, we arrive at the following model:
+    \begin{equation}
+        p^{*} = \frac{e^{(r-q)\Delta t}-d}{u-d}
+    \end{equation}
+    \begin{equation}
+        u = \frac{1}{2}e^{(r-q)\Delta t}X\left(X + 1 + \sqrt{X^{2}+2X-3}\right)
+    \end{equation}
+    \begin{equation}
+        d = \frac{1}{2}e^{(r-q)\Delta t}X\left(X + 1 - \sqrt{X^{2}+2X-3}\right)
+    \end{equation}
+
+
 
 
 
