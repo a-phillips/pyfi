@@ -140,7 +140,7 @@ for each class for its specific use.
   * Tian - the "moment matching" binomial model - EuropeanTian/AmericanTian/BermudanTian
   * For binary - EuropeanBinaryCRR, AmericanBinaryTian, etc.
 ```python
->>> my_option = AmericanCRR(S=Stock(50, .3), K=50, T=1, n=4, r=.03, call=True)
+>>> my_option = AmericanCRR(S=50, sigma=.3, K=50, T=1, n=4, r=.03, call=True)
 >>> my_option.print_tree() #Print option value tree and stock tree
 6.29
 1.98    10.91
