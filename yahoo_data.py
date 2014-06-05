@@ -1,8 +1,18 @@
 """This program is used to collect data from the Yahoo Finance API.
 
 Functions:
-get_data - use this to get data form the Yahoo Finance API. Returns a dictionary of the symbol
-           and resulting data.
+get_current_data - use this to get data from the Yahoo Finance API for various stock prices. Returns
+                   a dictionary of the symbol and resulting data. Use show_stock_field_codes() to see
+                   the codes for each data field.
+get_historical_data - retrieves historical data for one stock symbol. Must specify the symbol, start and
+                      end dates, and the data interval ('m','w','d'). Returns a dictionary of the dates
+                      and the resulting data.
+get_sector_data - retrieves sector data for all sectors. This function takes no arguments, and returns a
+                  dictionary of the sector and the resulting data.
+get_industry_data - retrieves data by industry. If one of the broad industry categories is selected, it returns
+                    data at the industry level. If a sub-industry is specified, it returns data at the company
+                    level within that industry. See the docstring for the broad industry codes or use
+                    show_industry_detail_codes() to see the sub-industry codes.
 show_yahoo_codes - use this to display the codes and field names accepted by Yahoo.
 """
 
@@ -12,12 +22,9 @@ from datetime import date, time
 
 #Yahoo API Info: https://code.google.com/p/yahoo-finance-managed/wiki/CSVAPI
 
-#Create dictionary of the codes used by Yahoo Finance
-
-
-
-
-
+#--------------------------------------------------------------------------------
+# Main functionality
+#--------------------------------------------------------------------------------
 
 
 def get_current_data(symbols, codes=None):
@@ -103,7 +110,8 @@ in the data set represents. The other keys of the dictionary will be the sectors
 def get_industry_data(industry_num):
     """get_industry_data(industry_num)
 
-Returns a dictionary of data by industry. Below is a key for the industry numbers:
+Returns a dictionary of data by industry. This query can return data at the industry level or
+at the company level by sub-industry. Below is a key for the broad industry numbers:
 
 Basic_Materials	 	1
 Conglomerates	 	2
@@ -114,6 +122,8 @@ Industrial_Goods	6
 Services	    	7
 Technology	    	8
 Utilities	    	9
+
+To see the numbers for the sub-industries, use show_industry_detail_codes().
 """
     total_url = 'http://biz.yahoo.com/p/csv/%sconameu.csv' % industry_num
     raw_file = urllib2.urlopen(total_url).read().splitlines()
@@ -131,154 +141,6 @@ Utilities	    	9
                 data[line[0]][i] /= 100
     return data
 
-
-
-
-#--------------------------------------------------------------------------------
-# Code for formatting individual portions of each field
-#--------------------------------------------------------------------------------
-
-
-def _format_as_float(str_num):
-    if str_num in ['N/A', '-']:
-        return None
-    else:
-        factor = 1.0
-        #Check for <b>num</b> which wraps some realtime results
-        if str_num.find('<b>') != -1:
-            str_num = str_num.replace('<b>','')
-            str_num = str_num.replace('</b>','')
-        #Check for leading +'s and -'s
-        if str_num[0] == '-':
-            factor *= -1
-            str_num = str_num[1:]
-        elif str_num[0] == '+':
-            str_num = str_num[1:]
-        #Check for trailing %'s, B's, M's, or K's
-        if str_num[-1] == '%':
-            str_num = str_num[:-1]
-            factor /= 100
-        elif str_num[-1] == 'B':
-            str_num = str_num[:-1]
-            factor *= (10**9)
-        elif str_num[-1] == 'M':
-            str_num = str_num[:-1]
-            factor *= (10**6)
-        elif str_num[-1] == 'K':
-            str_num = str_num[:-1]
-            factor *= (10**3)
-        return float(str_num)*factor
-
-
-def _format_as_date(str_date, past=True):
-    if str_date in ['N/A', '-']:
-        return None
-    month = [0, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    #Example date: 'Jun  3'
-    data_mon = month.index(str_date[:3])
-    data_day = int(str_date[str_date.rfind(' ')+1:])
-    # Need to determine year since Yahoo doesn't provide it. Assumes that no date is
-    # greater than 1 year away from the current date
-    curr_date = date.today()
-    data_year = curr_date.year
-    if past:
-        if data_mon > curr_date.month:
-            data_year -= 1
-        elif data_mon == curr_date.month and data_day > curr_date.day:
-            data_year -= 1
-    else:
-        if data_mon < curr_date.month:
-            data_year += 1
-        elif data_mon == curr_date.month and data_day < curr_date.day:
-            data_year += 1
-    return date(data_year, data_mon, data_day)
-
-
-def _format_as_time(str_time):
-    hour = int(str_time[:str_time.find(':')])
-    if str_time[-2:] == 'pm':
-        hour += 12
-    minute = int(str_time[str_time.find(':')+1:-2])
-    return time(hour, minute)
-
-
-#--------------------------------------------------------------------------------
-# Code for formatting each field
-#--------------------------------------------------------------------------------
-
-def _format_data(codes, data):
-    # Values that will be integers (i.e. bid/ask volumes) are being formatted as floats to
-    # prevent any calculation errors arising from using them, due to how integer division
-    # works in Python.
-    #All codes not specified here are formatted as floats
-    range_codes = ['c0', 'c8', 'g1', 'g5', 'k1', 'k2', 'm0', 'm2', 'w0',
-                   'w1', 'w4']
-    date_codes = ['d2', 'q0', 'r1', 'v7']
-    time_codes = ['t1']
-    str_codes = ['c4', 'n0', 'n4', 's0', 'x0']
-    do_not_use_codes = ['i0', 'f6', 'j2', 't7', 't6', 'f0', 'i5']
-
-    for i, code in enumerate(codes):
-        if code in time_codes:
-            data = _format_field_as_time(data, i)
-        elif code == 'l0':
-            data = _format_l0(data, i)
-        elif code in date_codes:
-            if code == 'r1':
-                data = _format_field_as_date(data, i, past=False)
-            else:
-                data = _format_field_as_date(data, i, past=True)
-        elif code in str_codes or code in do_not_use_codes:
-            #Formatted as string
-            pass
-        elif code in range_codes:
-            data = _format_field_as_range(data, i)
-        else:
-            # Float code
-            if code == 'y0': # This field doesn't end in %, even though it's a percentage
-                for data_line in data.values():
-                    data_line[i] += '%'
-            data = _format_field_as_float(data, i)
-    return data
-
-
-def _format_field_as_float(data, i):
-    for data_line in data.values():
-        data_line[i] = _format_as_float(data_line[i])
-    return data
-
-
-def _format_field_as_range(data, i):
-    # Example: '26.52 - 28.55'
-    for data_line in data.values():
-        rng = data_line[i]
-        new_rng = (rng[:rng.find(' ')], rng[rng.rfind(' ')+1:])
-        new_rng = (_format_as_float(new_rng[0]), _format_as_float(new_rng[1]))
-        data_line[i] = new_rng
-    return data
-
-
-def _format_field_as_date(data, i, past):
-    for data_line in data.values():
-        data_line[i] = _format_as_date(data_line[i], past)
-    return data
-
-
-def _format_field_as_time(data, i):
-    for data_line in data.values():
-        data_line[i] = _format_as_time(data_line[i])
-    return data
-
-
-def _format_l0(data, i):
-    #Example: 'Jun  2 - <b>26.71</b>'
-    for data_line in data.values():
-        temp = data_line[i]
-        new_data = (temp[:temp.find('-')-1], temp[temp.rfind(' ')+1:])
-        new_data = (_format_as_date(new_data[0], past=True), _format_as_float(new_data[1]))
-        data_line[i] = new_data
-    return data
 
 #--------------------------------------------------------------------------------
 # Displaying the codes for the Yahoo Finance API
@@ -386,6 +248,7 @@ def show_stock_field_codes(by_field=True):
 
 
 def show_industry_detail_codes(by_field=True):
+    #Source: http://pastie.org/6419646#1
     get_industry_detail_code = {
     'Agricultural_Chemicals'                :112,
     'Aluminum'                              :132,
@@ -613,6 +476,153 @@ def show_industry_detail_codes(by_field=True):
         sorted_code_list = get_industry_detail_name.keys()
         sorted_code_list.sort()
         print '\n'.join(['%s: %s' % (code, get_industry_detail_name[code]) for code in sorted_code_list])
+
+
+#--------------------------------------------------------------------------------
+# Local functions for formatting individual portions of each field
+#--------------------------------------------------------------------------------
+
+
+def _format_as_float(str_num):
+    if str_num in ['N/A', '-']:
+        return None
+    else:
+        factor = 1.0
+        #Check for <b>num</b> which wraps some realtime results
+        if str_num.find('<b>') != -1:
+            str_num = str_num.replace('<b>','')
+            str_num = str_num.replace('</b>','')
+        #Check for leading +'s and -'s
+        if str_num[0] == '-':
+            factor *= -1
+            str_num = str_num[1:]
+        elif str_num[0] == '+':
+            str_num = str_num[1:]
+        #Check for trailing %'s, B's, M's, or K's
+        if str_num[-1] == '%':
+            str_num = str_num[:-1]
+            factor /= 100
+        elif str_num[-1] == 'B':
+            str_num = str_num[:-1]
+            factor *= (10**9)
+        elif str_num[-1] == 'M':
+            str_num = str_num[:-1]
+            factor *= (10**6)
+        elif str_num[-1] == 'K':
+            str_num = str_num[:-1]
+            factor *= (10**3)
+        return float(str_num)*factor
+
+
+def _format_as_date(str_date, past=True):
+    if str_date in ['N/A', '-']:
+        return None
+    month = [0, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    #Example date: 'Jun  3'
+    data_mon = month.index(str_date[:3])
+    data_day = int(str_date[str_date.rfind(' ')+1:])
+    # Need to determine year since Yahoo doesn't provide it. Assumes that no date is
+    # greater than 1 year away from the current date
+    curr_date = date.today()
+    data_year = curr_date.year
+    if past:
+        if data_mon > curr_date.month:
+            data_year -= 1
+        elif data_mon == curr_date.month and data_day > curr_date.day:
+            data_year -= 1
+    else:
+        if data_mon < curr_date.month:
+            data_year += 1
+        elif data_mon == curr_date.month and data_day < curr_date.day:
+            data_year += 1
+    return date(data_year, data_mon, data_day)
+
+
+def _format_as_time(str_time):
+    hour = int(str_time[:str_time.find(':')])
+    if str_time[-2:] == 'pm':
+        hour += 12
+    minute = int(str_time[str_time.find(':')+1:-2])
+    return time(hour, minute)
+
+
+#--------------------------------------------------------------------------------
+# Local functions for formatting each field
+#--------------------------------------------------------------------------------
+
+def _format_data(codes, data):
+    # Values that will be integers (i.e. bid/ask volumes) are being formatted as floats to
+    # prevent any calculation errors arising from using them, due to how integer division
+    # works in Python.
+    #All codes not specified here are formatted as floats
+    range_codes = ['c0', 'c8', 'g1', 'g5', 'k1', 'k2', 'm0', 'm2', 'w0',
+                   'w1', 'w4']
+    date_codes = ['d2', 'q0', 'r1', 'v7']
+    time_codes = ['t1']
+    str_codes = ['c4', 'n0', 'n4', 's0', 'x0']
+    do_not_use_codes = ['i0', 'f6', 'j2', 't7', 't6', 'f0', 'i5']
+
+    for i, code in enumerate(codes):
+        if code in time_codes:
+            data = _format_field_as_time(data, i)
+        elif code == 'l0':
+            data = _format_l0(data, i)
+        elif code in date_codes:
+            if code == 'r1':
+                data = _format_field_as_date(data, i, past=False)
+            else:
+                data = _format_field_as_date(data, i, past=True)
+        elif code in str_codes or code in do_not_use_codes:
+            #Formatted as string
+            pass
+        elif code in range_codes:
+            data = _format_field_as_range(data, i)
+        else:
+            # Float code
+            if code == 'y0': # This field doesn't end in %, even though it's a percentage
+                for data_line in data.values():
+                    data_line[i] += '%'
+            data = _format_field_as_float(data, i)
+    return data
+
+
+def _format_field_as_float(data, i):
+    for data_line in data.values():
+        data_line[i] = _format_as_float(data_line[i])
+    return data
+
+
+def _format_field_as_range(data, i):
+    # Example: '26.52 - 28.55'
+    for data_line in data.values():
+        rng = data_line[i]
+        new_rng = (rng[:rng.find(' ')], rng[rng.rfind(' ')+1:])
+        new_rng = (_format_as_float(new_rng[0]), _format_as_float(new_rng[1]))
+        data_line[i] = new_rng
+    return data
+
+
+def _format_field_as_date(data, i, past):
+    for data_line in data.values():
+        data_line[i] = _format_as_date(data_line[i], past)
+    return data
+
+
+def _format_field_as_time(data, i):
+    for data_line in data.values():
+        data_line[i] = _format_as_time(data_line[i])
+    return data
+
+
+def _format_l0(data, i):
+    #Example: 'Jun  2 - <b>26.71</b>'
+    for data_line in data.values():
+        temp = data_line[i]
+        new_data = (temp[:temp.find('-')-1], temp[temp.rfind(' ')+1:])
+        new_data = (_format_as_date(new_data[0], past=True), _format_as_float(new_data[1]))
+        data_line[i] = new_data
+    return data
 
 
 #--------------------------------------------------------------------------------
