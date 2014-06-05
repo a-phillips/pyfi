@@ -305,6 +305,23 @@ def get_historical_data(symbol, from_date, to_date, interval):
     return data
 
 
+def get_sector_data(sort_property, sort_direction):
+    total_url = 'http://biz.yahoo.com/p/csv/s_'+sort_property+sort_direction+'.csv'
+    raw_file = urllib2.urlopen(total_url).read().splitlines()
+    #First element is headers, last element is a blank list
+    data = {'headers': raw_file[0].replace('"','').split(',')}
+    print data['headers']
+    for line in raw_file[1:-1]:
+        line = line.replace('"','').split(',')
+        data[line[0]] = [_format_as_float(item) for item in line[1:]]
+        #Certain fields are percentage, so divide by 100
+        for i in [0, 3, 4]:
+            data[line[0]][i] /= 100
+    return data
+
+
+
+
 #--------------------------------------------------------------------------------
 # Code for formatting individual portions of each field
 #--------------------------------------------------------------------------------
@@ -417,6 +434,11 @@ def _format_l0(data, i):
 
 
 if __name__ == '__main__':
+    test_data = get_sector_data('coname','u')
+    for item in test_data.keys():
+        print item, test_data[item]
+    """
     test_data = get_historical_data('LUV', date(2014, 1, 1), date(2014, 6, 3), 'w')
     print test_data['headers']
     print test_data[date(2014, 5, 19)]
+    """
