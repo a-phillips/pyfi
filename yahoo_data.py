@@ -13,7 +13,8 @@ get_industry_data - retrieves data by industry. If one of the broad industry cat
                     data at the industry level. If a sub-industry is specified, it returns data at the company
                     level within that industry. See the docstring for the broad industry codes or use
                     show_industry_detail_codes() to see the sub-industry codes.
-show_yahoo_codes - use this to display the codes and field names accepted by Yahoo.
+show_stock_field_codes - displays the valid codes and associated fields for the get_current_data query
+show_industry_detail_codes - displays the sub-industry codes for the get_industry_data query
 """
 
 import urllib
