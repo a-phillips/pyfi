@@ -22,7 +22,7 @@ of repetition in each of the actual functions."""
         raise Exception('Invalid value for dt. Must be greater than 0')
 
 
-def _check_option_error(S, sigma, K, T, n, r, q=0, ex=None, call=True, geom=True):
+def _check_option_error(S, sigma, K, T, n=1, r=0.0, q=0.0, ex=None, call=True, geom=True):
     if not isinstance(S, float) and not isinstance(S, int):
         raise Exception('Invalid type for S. Must be a float or int')
     if not isinstance(sigma, float):
@@ -247,6 +247,18 @@ def calc_bin_greeks(stock_tree, price_tree, dt):
     return (delta, gamma, theta)
 
 
+def calc_bs_greeks():
+    pass
+
+
+def phi(x):
+    """phi(x)
+
+Finds the CDF of a Normal(0, 1) distribution evaluated at x.
+"""
+    return (1.0 + math.erf(x/math.sqrt(2.0)))/2.0
+
+
 #------------------------------------------------------------------------------------
 #Classes (Assets, Options)
 #------------------------------------------------------------------------------------
@@ -360,7 +372,7 @@ class Amortize(object):
             if i == 0:
                 print '|'.join('{0:^{width}}'.format(x, width=y) for x, y in zip(headers, max_lens))
                 print '-'*(sum(max_lens)+4)
-            row = [i, 
+            row = [i,
                    round(self.payments[i], 2),
                    round(self.principal_paid[i], 2),
                    round(self.interest_paid[i], 2),
@@ -485,7 +497,7 @@ sigma: Volatility of the stock. Must be a float."""
         print 'Volatility: %s percent' % round(self.sigma*100, 2)
 
 
-#Binomial Options - Regular----------------------------------------------------------
+#Vanilla Options - Binomial Method---------------------------------------------------
 
 ###CRR-------------------------------------------------------------------------------
 
@@ -1300,7 +1312,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 print '\t'.join([str(round(price, 2)) for price in line])
 
 
-#Binomial Options - Binary----------------------------------------------------------
+#Binary Options - Binomial Method----------------------------------------------------
 
 ###CRR-------------------------------------------------------------------------------
 
@@ -2145,27 +2157,82 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 print '\t'.join([str(round(price, 2)) for price in line])
 
 
+#Vanilla Options - Black-Scholes-----------------------------------------------------
+
+class EuropeanBS(object):
+
+    def __init__(self, S, sigma, K, T, r, q, call=True):
+        _check_option_error(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
+        self.S = float(S)
+        self.sigma = sigma
+        self.K = float(K)
+        self.T = T
+        self.r = r
+        self.q = q
+        self.call = call
+        self.price = 0
+        self.calc_price()
+
+    def calc_price(self):
+        d1 = (math.log(self.S/self.K) + (self.r - self.q + (.5*(self.sigma**2)))*self.T)/(self.sigma*(self.T**.5))
+        d2 = d1 - (self.sigma*(self.T**.5))
+        if self.call:
+            Nd1, Nd2 = phi(d1), phi(d2)
+            self.price = (self.S*Nd1) - (self.K*math.exp(-(self.r - self.q)*self.T)*Nd2)
+            return self.price
+        else:
+            Nd1, Nd2 = phi(d1*-1), phi(d2*-1)
+            self.price = (self.K*math.exp(-(self.r - self.q)*self.T)*Nd2) - (self.S*Nd1)
+            return self.price
+
+    def implied_vol(self, mkt_price, precision=10):
+        # Preserving true value
+        actual_sigma = self.sigma
+        # Same search process as irr function
+        if mkt_price == self.price:
+            return self.sigma
+        elif mkt_price > self.price:
+            delta = 0.1
+        else:
+            delta = -0.1
+        while abs(delta) >= (10**(precision*-1)):
+            self.sigma += delta
+            self.calc_price()
+            if self.price == mkt_price:
+                imp_vol = self.sigma
+                # Restore initial values
+                self.sigma = actual_sigma
+                self.calc_price()
+                return imp_vol
+            else:
+                if self.price < mkt_price and delta < 0:
+                    delta /= -10
+                elif self.price > mkt_price and delta > 0:
+                    delta /= -10
+        imp_vol = self.sigma
+        self.sigma = actual_sigma
+        self.calc_price()
+        return imp_vol
+
+
+
+
+
+
+
+
 #------------------------------------------------------------------------------------
 #End
 #------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    print 'European CRR \t', EuropeanCRR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'European JR \t', EuropeanJR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'European Tian \t', EuropeanTian(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'European Binary CRR \t', EuropeanBinaryCRR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'European Binary JR \t', EuropeanBinaryJR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'European Binary Tian \t', EuropeanBinaryTian(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'American CRR \t', AmericanCRR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'American JR \t', AmericanJR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'American Tian \t', AmericanTian(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'American Binary CRR \t', AmericanBinaryCRR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'American Binary JR \t', AmericanBinaryJR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'American Binary Tian \t', AmericanBinaryTian(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True).price
-    print 'Bermudan CRR \t', BermudanCRR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True,ex=[1,3]).price
-    print 'Bermudan JR \t', BermudanJR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True,ex=[1,3]).price
-    print 'Bermudan Tian \t', BermudanTian(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True,ex=[1,3]).price
-    print 'Bermudan Binary CRR \t', BermudanBinaryCRR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True,ex=[1,3]).price
-    print 'Bermudan Binary JR \t', BermudanBinaryJR(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True,ex=[1,3]).price
-    print 'Bermudan Binary Tian \t', BermudanBinaryTian(S=50,sigma=.4,K=50,T=2,n=1000,r=.03,q=0.0,call=True,ex=[1,3]).price
-
+    my_option1 = EuropeanBS(S=210.59, sigma=.1404, K=205, T=4.0/365, r=.002175, q=0.0, call=True)
+    print my_option1.price
+    my_option2 = EuropeanBS(S=210.59, sigma=.1404, K=205, T=4.0/365, r=.002175, q=0.0, call=False)
+    print my_option2.price
+    print my_option1.implied_vol(mkt_price=6,precision=5)
+    print my_option1.price
+    print my_option1.sigma
+    print my_option2.implied_vol(mkt_price=1.5,precision=5)
+    print my_option2.price
+    print my_option2.sigma
