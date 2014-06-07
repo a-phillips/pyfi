@@ -193,6 +193,20 @@ and allowing $X = e^{\sigma^{2}\Delta t}$, we arrive at the following model:
         d = \frac{1}{2}e^{(r-q)\Delta t}X\left(X + 1 - \sqrt{X^{2}+2X-3}\right)
     \end{equation}
 
+\subsubsection{Greeks}
+The "Greeks" for the options can be approximated in a binomial environment by converting the partial
+derivative associated with that Greek into a discrete approximation. Below are the formulas used for the
+three Greeks calculated by PyFi for each binomial option:
+    \begin{equation}
+        \Delta = \frac{\partial V}{\partial S} = \frac{V_{u} - V_{d}}{S_{u} - S_{d}}
+    \end{equation}
+    \begin{equation}
+        \Gamma = \frac{\partial^{2}V}{\partial S^2}
+               = \frac{\frac{V_{uu}-V_{ud}}{S_{uu}-S_{ud}} - \frac{V_{du}-V_{dd}}{S_{du}-S_{dd}}}{S_{uu} - S_{dd}}
+    \end{equation}
+    \begin{equation}
+        \Theta = \frac{\partial V}{\partial dt} = \frac{V - V_{ud}}{2*dt}
+    \end{equation}
 
 
 
