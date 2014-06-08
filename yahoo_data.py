@@ -41,7 +41,7 @@ codes - list of the codes for the desired fields. If None, will get all data. Us
     # Get all data if no codes are specified
     if codes is None:
         codes = get_stock_field_code.values()
-    codes.sort()
+        codes.sort()
 
     # Filter out codes that return bad or not useful data.
     _do_not_use_codes = ['i0','f6','j2','t7','t6','f0', 'i5']
@@ -128,7 +128,6 @@ To see the numbers for the sub-industries, use show_industry_detail_codes().
 """
     total_url = 'http://biz.yahoo.com/p/csv/%sconameu.csv' % industry_num
     raw_file = urllib2.urlopen(total_url).read().splitlines()
-    print raw_file
     data = {'headers': raw_file[0].replace('"','').split(',')}
     for line in raw_file[1:-1]:
         old_co_name = line[:line.find('"',1)+1]
@@ -236,6 +235,7 @@ def show_stock_field_codes(by_field=True):
     'k0':	'Year High',
     'j0':	'Year Low',
     'w0':	'Year Range'}
+    print len(get_stock_field_name.keys())
     #Reverse get_stock_field_name dictionary to look up codes for desired fields.
     get_stock_field_code = dict(zip(get_stock_field_name.values(),get_stock_field_name.keys()))
     if by_field:
@@ -467,6 +467,7 @@ def show_industry_detail_codes(by_field=True):
     'Gas_Utilities'                         :912,
     'Water_Utilities'                       :914
     }
+    print len(get_industry_detail_code.keys())
     #Reverse the dictionary to look up industry names by key
     get_industry_detail_name = dict(zip(get_industry_detail_code.values(), get_industry_detail_code.keys()))
     if by_field:
@@ -633,9 +634,7 @@ def _format_l0(data, i):
 
 if __name__ == '__main__':
     show_industry_detail_codes()
-    test_data = get_industry_data(112)
-    for item in test_data.keys():
-        print item, test_data[item]
+    show_stock_field_codes()
     """
     test_data = get_historical_data('LUV', date(2014, 1, 1), date(2014, 6, 3), 'w')
     print test_data['headers']
