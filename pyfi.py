@@ -512,7 +512,8 @@ where ST is the final sock price.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -593,7 +594,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -679,7 +681,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -776,7 +779,8 @@ where ST is the final sock price.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -859,7 +863,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -948,7 +953,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1044,7 +1050,8 @@ where ST is the final sock price.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1131,7 +1138,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1224,7 +1232,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1327,7 +1336,8 @@ where ST is the final sock price.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1415,7 +1425,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1509,7 +1520,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1612,7 +1624,8 @@ where ST is the final sock price.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1699,7 +1712,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1794,7 +1808,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1896,7 +1911,8 @@ where ST is the final sock price.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -1987,7 +2003,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
@@ -2086,7 +2103,8 @@ max(K - St, 0) for puts, where St is the stock price at time t.
 
 This class takes the following arguments:
 
-S: underlying stock, must be a Stock object
+S: underlying stock price
+sigma: underlying stock annual volatility
 K: strike price of the option
 T: length of the life of the option (in annual terms)
 n: number of periods in the tree (time step between periods = T/n)
