@@ -1,3 +1,39 @@
+"""This is the primary module of the PyFi package. This module includes basic and advanced financial
+functions, as well as classes to model certain financial instruments such as bonds, amortizing loans,
+and equity options.
+
+Current Functions:
+pv - returns the present value of a series of cash flows
+fv - returns the future value of a series of cash flows
+irr - returns the Internal Rate of Return (IRR) of a series of cash flows
+mirr - returns the Modified IRR of a series of cash flows
+macD - returns the Macaulay duration of a series fo cash flows
+modD - returns the Modified duration of a series of cash flows
+convexity - returns the convexity of a series of cash flows
+phi - returns the CDF of a N(0,1) distribution evaluated at a particular point
+
+Current Classes:
+Amortize - amortizes a beginning principal based on the arguments given. All attributes, such as interest paid, principal
+           remaining, etc. are stored as lists over all payment periods for easy access.
+Bond - creates a bond object. Price and YTM can be changed or calculated. Duration and convexity are also calculated
+       automatically.
+Stock - holds current value and volatility of a stock.
+Options - various options are treated as classes in PyFi:
+    - Binomial. Note Binary options can be either cash-or-nothing or asset-or-nothing. Delta, Gamma, and Theta are
+      calculated automatically.
+        - EuropeanCRR / EuropeanBinaryCRR
+        - AmericanCRR / AmericanBinaryCRR
+        - BermudanCRR / BermudanBinaryCRR
+        - EuropeanJR / EuropeanBinaryJR
+        - AmericanJR / AmericanBinaryJR
+        - BermudanJR / BermudanBinaryJR
+        - EuropeanTian / EuropeanBinaryTian
+        - AmericanTian / AmericanBinaryTian
+        - BermudanTian / BermudanBinaryTian
+    - Closed-Form.
+        - EuropeanBS / EuropeanBinaryBS
+"""
+
 import math
 import copy
 
@@ -2219,10 +2255,10 @@ class EuropeanBS(object):
         d2 = d1 - (self.sigma*(self.T**.5))
         if self.call:
             Nd1, Nd2 = phi(d1), phi(d2)
-            self.price = (self.S*Nd1) - (self.K*math.exp(-(self.r - self.q)*self.T)*Nd2)
+            self.price = (math.exp(-self.q*self.T)*self.S*Nd1) - (math.exp(-self.r*self.T)*self.K*Nd2)
         else:
             Nd1, Nd2 = phi(d1*-1), phi(d2*-1)
-            self.price = (self.K*math.exp(-(self.r - self.q)*self.T)*Nd2) - (self.S*Nd1)
+            self.price = (math.exp(-self.r*self.T)*self.K*Nd2) - (math.exp(-self.q*self.T)*self.S*Nd1)
         return self.price
 
     def implied_vol(self, mkt_price, precision=10):
@@ -2276,13 +2312,13 @@ class EuropeanBinaryBS(object):
         d1 = (math.log(self.S/self.K) + (self.r - self.q + (.5*(self.sigma**2)))*self.T)/(self.sigma*(self.T**.5))
         d2 = d1 - (self.sigma*(self.T**.5))
         if self.call and self.cash:
-            self.price = math.exp(-(self.r - self.q)*self.T)*phi(d2)
+            self.price = math.exp(-(self.r*self.T))*phi(d2)
         elif not self.call and self.cash:
-            self.price = math.exp(-(self.r - self.q)*self.T)*phi(d2*-1)
+            self.price = math.exp(-(self.r*self.T))*phi(d2*-1)
         elif self.call and not self.cash:
-            self.price = self.S*math.exp(-(self.r - self.q)*self.T)*phi(d1)
+            self.price = self.S*math.exp(-(self.q*self.T))*phi(d1)
         else:
-            self.price = self.S*math.exp(-(self.r - self.q)*self.T)*phi(d1*-1)
+            self.price = self.S*math.exp(-(self.q*self.T))*phi(d1*-1)
         return self.price
 
     #TODO: Derive formulas for volatility for d1 and d2 to get implied vol.
