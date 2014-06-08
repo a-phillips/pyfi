@@ -1318,7 +1318,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 
 
 class EuropeanBinaryCRR(object):
-    """EuropeanCRR(S, sigma, K, T, n, r, q=0, call=True)
+    """EuropeanBinaryCRR(S, sigma, K, T, n, r, q=0, call=True, cash=True)
 
 Creates a European option. European options give the option buyer the right
 to buy (call) or sell (put) a stock at a future date for a specified strike
@@ -1334,10 +1334,11 @@ n: number of periods in the tree (time step between periods = T/n)
 r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
         self.S = S
         self.sigma = sigma
@@ -1348,181 +1349,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.r = r
         self.q = q
         self.call = call
-        self.delta = 0
-        self.gamma = 0
-        self.theta = 0
-        self.price_tree = []
-        self.stock_tree = []
-        self.price = self.calc_price()
-
-    def make_tree(self):
-        stock_tree = []
-        u = math.exp(self.sigma*(self.dt**.5))
-        d = 1/u
-        for t in xrange(self.n+1):
-            prices = []
-            for num_u in xrange(t+1):
-                prices.append(self.S*(u**num_u)*(d**(t-num_u)))
-            stock_tree.append(prices)
-        self.stock_tree = stock_tree
-        return stock_tree
-
-    def calc_price(self):
-        self.stock_tree = self.make_tree()
-        price_tree = copy.deepcopy(self.stock_tree)
-        u = math.exp(self.sigma*(self.dt**.5))
-        d = 1/u
-        pu = (math.exp((self.r - self.q)*self.dt) - d)/(u - d)
-        pd = 1 - pu
-        for i, price in enumerate(price_tree[-1]):
-            if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
-            elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
-            else:
-                price_tree[-1][i] = 0
-        for t in xrange(self.n-1, -1, -1):
-            for i in xrange(t+1):
-                price_tree[t][i] = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
-                price_tree[t][i] *= math.exp((self.r-self.q)*self.dt*-1)
-        self.price = price_tree[0][0]
-        self.price_tree = price_tree
-        self.delta, self.gamma, self.theta = calc_bin_greeks(self.stock_tree, self.price_tree, self.dt)
-        return self.price
-
-    def print_tree(self, stock=False):
-        if stock:
-            for line in self.stock_tree:
-                print '\t'.join([str(round(price, 2)) for price in line])
-        else:
-            for line in self.price_tree:
-                print '\t'.join([str(round(price, 2)) for price in line])
-
-
-class AmericanBinaryCRR(object):
-    """AmericanCRR(S, sigma, K, T, n, r, q=0, call=True)
-
-Creates an American option. An American option gives the option buyer
-the right to buy (call) or sell (put) a stock at a specified strike price.
-The buyer may exercise this option before expiry at any time. Whenever the
-option is exercised, the payout is max(St - K, 0) for calls and
-max(K - St, 0) for puts, where St is the stock price at time t.
-
-This class takes the following arguments:
-
-S: underlying stock, must be a Stock object
-K: strike price of the option
-T: length of the life of the option (in annual terms)
-n: number of periods in the tree (time step between periods = T/n)
-r: annual risk-free rate, compounded continuously
-q: annual continuous dividend rate, defaults to 0
-call: boolean indicating if the option is a call or put option, defaults to True
-
-If any of the parameters change, run [object name].calc_price() to generate the new price.
-"""
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True):
-        _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
-        self.S = S
-        self.sigma = sigma
-        self.K = K
-        self.T = T
-        self.n = n
-        self.dt = float(T)/n
-        self.r = r
-        self.q = q
-        self.call = call
-        self.delta = 0
-        self.gamma = 0
-        self.theta = 0
-        self.price_tree = []
-        self.stock_tree = []
-        self.price = self.calc_price()
-
-    def make_tree(self):
-        stock_tree = []
-        u = math.exp(self.sigma*(self.dt**.5))
-        d = 1/u
-        for t in xrange(self.n+1):
-            prices = []
-            for num_u in xrange(t+1):
-                prices.append(self.S*(u**num_u)*(d**(t-num_u)))
-            stock_tree.append(prices)
-        self.stock_tree = stock_tree
-        return stock_tree
-
-    def calc_price(self):
-        self.stock_tree = self.make_tree()
-        price_tree = copy.deepcopy(self.stock_tree)
-        u = math.exp(self.sigma*(self.dt**.5))
-        d = 1/u
-        pu = (math.exp((self.r - self.q)*self.dt) - d)/(u - d)
-        pd = 1 - pu
-        for i, price in enumerate(price_tree[-1]):
-            if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
-            elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
-            else:
-                price_tree[-1][i] = 0
-        for t in xrange(self.n-1, -1, -1):
-            for i in xrange(t+1):
-                option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
-                if self.call and price_tree[t][i] - self.K > 0:
-                    exercise_value = 1
-                elif not self.call and self.K - price_tree[t][i] > 0:
-                    exercise_value = 1
-                else:
-                    exercise_value = 0
-                price_tree[t][i] = max(option_value, exercise_value)
-                price_tree[t][i] *= math.exp((self.r-self.q)*self.dt*-1)
-        self.price = price_tree[0][0]
-        self.price_tree = price_tree
-        self.delta, self.gamma, self.theta = calc_bin_greeks(self.stock_tree, self.price_tree, self.dt)
-        return self.price
-
-    def print_tree(self, stock=False):
-        if stock:
-            for line in self.stock_tree:
-                print '\t'.join([str(round(price, 2)) for price in line])
-        else:
-            for line in self.price_tree:
-                print '\t'.join([str(round(price, 2)) for price in line])
-
-
-class BermudanBinaryCRR(object):
-    """BermudanCRR(S, sigma, K, T, n, r, q=0, ex=[], call=True)
-
-Creates an Bermudan option. A Bermudan option gives the option buyer
-the right to buy (call) or sell (put) a stock at a specified strike price.
-The buyer may exercise this option at certain points in time. Whenever the
-option is exercised, the payout is max(St - K, 0) for calls and
-max(K - St, 0) for puts, where St is the stock price at time t.
-
-This class takes the following arguments:
-
-S: underlying stock, must be a Stock object
-K: strike price of the option
-T: length of the life of the option (in annual terms)
-n: number of periods in the tree (time step between periods = T/n)
-r: annual risk-free rate, compounded continuously
-q: annual continuous dividend rate, defaults to 0
-ex: a list containing the periods at which exercising is allowed.
-call: boolean indicating if the option is a call or put option, defaults to True
-
-If any of the parameters change, run [object name].calc_price() to generate the new price.
-"""
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, ex=None, call=True):
-        _check_option_error(S, sigma, K, T, n, r, q=q, ex=ex, call=call)
-        self.S = S
-        self.sigma = sigma
-        self.K = K
-        self.T = T
-        self.n = n
-        self.dt = float(T)/n
-        self.r = r
-        self.q = q
-        self.ex = ex
-        self.call = call
+        self.cash = cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -1552,9 +1379,193 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                #Evaluates to 1 if cash, asset price if not cash
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
+            else:
+                price_tree[-1][i] = 0
+        #Move backwards through the tree to determine option values
+        for t in xrange(self.n-1, -1, -1):
+            for i in xrange(t+1):
+                price_tree[t][i] = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
+                price_tree[t][i] *= math.exp((self.r-self.q)*self.dt*-1)
+        self.price = price_tree[0][0]
+        self.price_tree = price_tree
+        self.delta, self.gamma, self.theta = calc_bin_greeks(self.stock_tree, self.price_tree, self.dt)
+        return self.price
+
+    def print_tree(self, stock=False):
+        if stock:
+            for line in self.stock_tree:
+                print '\t'.join([str(round(price, 2)) for price in line])
+        else:
+            for line in self.price_tree:
+                print '\t'.join([str(round(price, 2)) for price in line])
+
+
+class AmericanBinaryCRR(object):
+    """AmericanBinaryCRR(S, sigma, K, T, n, r, q=0, call=True, cash=True)
+
+Creates an American option. An American option gives the option buyer
+the right to buy (call) or sell (put) a stock at a specified strike price.
+The buyer may exercise this option before expiry at any time. Whenever the
+option is exercised, the payout is max(St - K, 0) for calls and
+max(K - St, 0) for puts, where St is the stock price at time t.
+
+This class takes the following arguments:
+
+S: underlying stock, must be a Stock object
+K: strike price of the option
+T: length of the life of the option (in annual terms)
+n: number of periods in the tree (time step between periods = T/n)
+r: annual risk-free rate, compounded continuously
+q: annual continuous dividend rate, defaults to 0
+call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
+
+If any of the parameters change, run [object name].calc_price() to generate the new price.
+"""
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True, cash=True):
+        _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
+        self.S = S
+        self.sigma = sigma
+        self.K = K
+        self.T = T
+        self.n = n
+        self.dt = float(T)/n
+        self.r = r
+        self.q = q
+        self.call = call
+        self.cash = cash
+        self.delta = 0
+        self.gamma = 0
+        self.theta = 0
+        self.price_tree = []
+        self.stock_tree = []
+        self.price = self.calc_price()
+
+    def make_tree(self):
+        stock_tree = []
+        u = math.exp(self.sigma*(self.dt**.5))
+        d = 1/u
+        for t in xrange(self.n+1):
+            prices = []
+            for num_u in xrange(t+1):
+                prices.append(self.S*(u**num_u)*(d**(t-num_u)))
+            stock_tree.append(prices)
+        self.stock_tree = stock_tree
+        return stock_tree
+
+    def calc_price(self):
+        self.stock_tree = self.make_tree()
+        price_tree = copy.deepcopy(self.stock_tree)
+        u = math.exp(self.sigma*(self.dt**.5))
+        d = 1/u
+        pu = (math.exp((self.r - self.q)*self.dt) - d)/(u - d)
+        pd = 1 - pu
+        #Find exercise value at final nodes
+        for i, price in enumerate(price_tree[-1]):
+            if self.call and price - self.K > 0:
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
+            elif not self.call and self.K - price > 0:
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
+            else:
+                price_tree[-1][i] = 0
+        #Move backwards through the tree to determine option values
+        for t in xrange(self.n-1, -1, -1):
+            for i in xrange(t+1):
+                option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
+                if self.call and price_tree[t][i] - self.K > 0:
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
+                elif not self.call and self.K - price_tree[t][i] > 0:
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
+                else:
+                    exercise_value = 0
+                price_tree[t][i] = max(option_value, exercise_value)
+                price_tree[t][i] *= math.exp((self.r-self.q)*self.dt*-1)
+        self.price = price_tree[0][0]
+        self.price_tree = price_tree
+        self.delta, self.gamma, self.theta = calc_bin_greeks(self.stock_tree, self.price_tree, self.dt)
+        return self.price
+
+    def print_tree(self, stock=False):
+        if stock:
+            for line in self.stock_tree:
+                print '\t'.join([str(round(price, 2)) for price in line])
+        else:
+            for line in self.price_tree:
+                print '\t'.join([str(round(price, 2)) for price in line])
+
+
+class BermudanBinaryCRR(object):
+    """BermudanBinaryCRR(S, sigma, K, T, n, r, q=0, ex=[], call=True, cash=True)
+
+Creates an Bermudan option. A Bermudan option gives the option buyer
+the right to buy (call) or sell (put) a stock at a specified strike price.
+The buyer may exercise this option at certain points in time. Whenever the
+option is exercised, the payout is max(St - K, 0) for calls and
+max(K - St, 0) for puts, where St is the stock price at time t.
+
+This class takes the following arguments:
+
+S: underlying stock, must be a Stock object
+K: strike price of the option
+T: length of the life of the option (in annual terms)
+n: number of periods in the tree (time step between periods = T/n)
+r: annual risk-free rate, compounded continuously
+q: annual continuous dividend rate, defaults to 0
+ex: a list containing the periods at which exercising is allowed.
+call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
+
+If any of the parameters change, run [object name].calc_price() to generate the new price.
+"""
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, ex=None, call=True, cash=True):
+        _check_option_error(S, sigma, K, T, n, r, q=q, ex=ex, call=call)
+        self.S = S
+        self.sigma = sigma
+        self.K = K
+        self.T = T
+        self.n = n
+        self.dt = float(T)/n
+        self.r = r
+        self.q = q
+        self.ex = ex
+        self.call = call
+        self.cash = cash
+        self.delta = 0
+        self.gamma = 0
+        self.theta = 0
+        self.price_tree = []
+        self.stock_tree = []
+        self.price = self.calc_price()
+
+    def make_tree(self):
+        stock_tree = []
+        u = math.exp(self.sigma*(self.dt**.5))
+        d = 1/u
+        for t in xrange(self.n+1):
+            prices = []
+            for num_u in xrange(t+1):
+                prices.append(self.S*(u**num_u)*(d**(t-num_u)))
+            stock_tree.append(prices)
+        self.stock_tree = stock_tree
+        return stock_tree
+
+    def calc_price(self):
+        self.stock_tree = self.make_tree()
+        price_tree = copy.deepcopy(self.stock_tree)
+        u = math.exp(self.sigma*(self.dt**.5))
+        d = 1/u
+        pu = (math.exp((self.r - self.q)*self.dt) - d)/(u - d)
+        pd = 1 - pu
+        #Find exercise value at final nodes
+        for i, price in enumerate(price_tree[-1]):
+            if self.call and price - self.K > 0:
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
+            elif not self.call and self.K - price > 0:
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -1563,9 +1574,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
                 #Use appropriate payout function
                 if self.call and price_tree[t][i] - self.K > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 elif not self.call and self.K - price_tree[t][i] > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 else:
                     exercise_value = 0
                 #Check if holder can exercise
@@ -1592,7 +1603,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 ###Jarrow-Rudd-----------------------------------------------------------------------
 
 class EuropeanBinaryJR(object):
-    """EuropeanJR(S, sigma, K, T, n, r, q=0, call=True)
+    """EuropeanBinaryJR(S, sigma, K, T, n, r, q=0, call=True, cash=True)
 
 Creates a European option. European options give the option buyer the right
 to buy (call) or sell (put) a stock at a future date for a specified strike
@@ -1608,10 +1619,11 @@ n: number of periods in the tree (time step between periods = T/n)
 r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
         self.S = S
         self.sigma = sigma
@@ -1622,6 +1634,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.r = r
         self.q = q
         self.call = call
+        self.cash=cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -1650,9 +1663,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find the exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -1676,7 +1689,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 
 
 class AmericanBinaryJR(object):
-    """AmericanJR(S, sigma, K, T, n, r, q=0, call=True)
+    """AmericanBinaryJR(S, sigma, K, T, n, r, q=0, call=True, cash=True)
 
 Creates an American option. An American option gives the option buyer
 the right to buy (call) or sell (put) a stock at a specified strike price.
@@ -1693,10 +1706,11 @@ n: number of periods in the tree (time step between periods = T/n)
 r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
         self.S = S
         self.sigma = sigma
@@ -1707,6 +1721,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.r = r
         self.q = q
         self.call = call
+        self.cash = cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -1735,9 +1750,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -1746,9 +1761,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
                 #Use appropriate payout function
                 if self.call and price_tree[t][i] - self.K > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 elif not self.call and self.K - price_tree[t][i] > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 else:
                     exercise_value = 0
                 price_tree[t][i] = max(option_value, exercise_value)
@@ -1769,7 +1784,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 
 
 class BermudanBinaryJR(object):
-    """BermudanJR(S, sigma, K, T, n, r, q=0, ex=[], call=True)
+    """BermudanBinaryJR(S, sigma, K, T, n, r, q=0, ex=[], call=True, cash=True)
 
 Creates an Bermudan option. A Bermudan option gives the option buyer
 the right to buy (call) or sell (put) a stock at a specified strike price.
@@ -1787,10 +1802,11 @@ r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 ex: a list containing the periods at which exercising is allowed.
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, ex=None, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, ex=None, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, ex=ex, call=call)
         self.S = S
         self.sigma = sigma
@@ -1802,6 +1818,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.q = q
         self.ex = ex
         self.call = call
+        self.cash = cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -1830,9 +1847,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -1841,9 +1858,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
                 #Use appropriate payout function
                 if self.call and price_tree[t][i] - self.K > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 elif not self.call and self.K - price_tree[t][i] > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 else:
                     exercise_value = 0
                 #Check if holder can exercise
@@ -1870,7 +1887,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 ###Tian------------------------------------------------------------------------------
 
 class EuropeanBinaryTian(object):
-    """EuropeanTian(S, sigma, K, T, n, r, q=0, call=True)
+    """EuropeanBinaryTian(S, sigma, K, T, n, r, q=0, call=True, cash=True)
 
 Creates a European option. European options give the option buyer the right
 to buy (call) or sell (put) a stock at a future date for a specified strike
@@ -1886,10 +1903,11 @@ n: number of periods in the tree (time step between periods = T/n)
 r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
         self.S = S
         self.sigma = sigma
@@ -1900,6 +1918,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.r = r
         self.q = q
         self.call = call
+        self.cash = cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -1932,9 +1951,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find the exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -1958,7 +1977,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 
 
 class AmericanBinaryTian(object):
-    """AmericanTian(S, sigma, K, T, n, r, q=0, call=True)
+    """AmericanBinaryTian(S, sigma, K, T, n, r, q=0, call=True, cash=True)
 
 Creates an American option. An American option gives the option buyer
 the right to buy (call) or sell (put) a stock at a specified strike price.
@@ -1975,10 +1994,11 @@ n: number of periods in the tree (time step between periods = T/n)
 r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, call=call)
         self.S = S
         self.sigma = sigma
@@ -1989,6 +2009,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.r = r
         self.q = q
         self.call = call
+        self.cash = cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -2021,9 +2042,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -2032,9 +2053,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
                 #Use appropriate payout function
                 if self.call and price_tree[t][i] - self.K > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 elif not self.call and self.K - price_tree[t][i] > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 else:
                     exercise_value = 0
                 price_tree[t][i] = max(option_value, exercise_value)
@@ -2055,7 +2076,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
 
 
 class BermudanBinaryTian(object):
-    """BermudanTian(S, sigma, K, T, n, r, q=0, ex=[], call=True)
+    """BermudanBinaryTian(S, sigma, K, T, n, r, q=0, ex=[], call=True, cash=True)
 
 Creates an Bermudan option. A Bermudan option gives the option buyer
 the right to buy (call) or sell (put) a stock at a specified strike price.
@@ -2073,10 +2094,11 @@ r: annual risk-free rate, compounded continuously
 q: annual continuous dividend rate, defaults to 0
 ex: a list containing the periods at which exercising is allowed.
 call: boolean indicating if the option is a call or put option, defaults to True
+cash: indicates if the option is cash-or-nothing or asset-or-nothing, defaults to True
 
 If any of the parameters change, run [object name].calc_price() to generate the new price.
 """
-    def __init__(self, S, sigma, K, T, n, r, q=0.0, ex=None, call=True):
+    def __init__(self, S, sigma, K, T, n, r, q=0.0, ex=None, call=True, cash=True):
         _check_option_error(S, sigma, K, T, n, r, q=q, ex=ex, call=call)
         self.S = S
         self.sigma = sigma
@@ -2088,6 +2110,7 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         self.q = q
         self.ex = ex
         self.call = call
+        self.cash = cash
         self.delta = 0
         self.gamma = 0
         self.theta = 0
@@ -2120,9 +2143,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
         #Find exercise value at final nodes
         for i, price in enumerate(price_tree[-1]):
             if self.call and price - self.K > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             elif not self.call and self.K - price > 0:
-                price_tree[-1][i] = 1
+                price_tree[-1][i] = (1*self.cash)+(self.stock_tree[-1][i]*(not self.cash))
             else:
                 price_tree[-1][i] = 0
         #Move backwards through the tree to determine option values
@@ -2131,9 +2154,9 @@ If any of the parameters change, run [object name].calc_price() to generate the 
                 option_value = (pd*price_tree[t+1][i])+(pu*price_tree[t+1][i+1])
                 #Use appropriate payout function
                 if self.call and price_tree[t][i] - self.K > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 elif not self.call and self.K - price_tree[t][i] > 0:
-                    exercise_value = 1
+                    exercise_value = (1*self.cash)+(self.stock_tree[t][i]*(not self.cash))
                 else:
                     exercise_value = 0
                 #Check if holder can exercise
@@ -2179,13 +2202,13 @@ class EuropeanBS(object):
         if self.call:
             Nd1, Nd2 = phi(d1), phi(d2)
             self.price = (self.S*Nd1) - (self.K*math.exp(-(self.r - self.q)*self.T)*Nd2)
-            return self.price
         else:
             Nd1, Nd2 = phi(d1*-1), phi(d2*-1)
             self.price = (self.K*math.exp(-(self.r - self.q)*self.T)*Nd2) - (self.S*Nd1)
-            return self.price
+        return self.price
 
     def implied_vol(self, mkt_price, precision=10):
+        # This process is identical for all BS objects - this can probably be refactored more optimally.
         # Preserving true value
         actual_sigma = self.sigma
         # Same search process as irr function
@@ -2215,9 +2238,36 @@ class EuropeanBS(object):
         return imp_vol
 
 
+class EuropeanBinaryBS(object):
 
+    def __init__(self, S, sigma, K, T, r, q, call=True, cash=True):
+        _check_option_error(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
+        self.S = float(S)
+        self.sigma = sigma
+        self.K = float(K)
+        self.T = T
+        self.r = r
+        self.q = q
+        self.call = call
+        self.cash = cash
+        self.price = 0
+        self.calc_price()
 
+    def calc_price(self):
+        #Source: http://en.wikipedia.org/wiki/Binary_option#Black.E2.80.93Scholes_valuation
+        d1 = (math.log(self.S/self.K) + (self.r - self.q + (.5*(self.sigma**2)))*self.T)/(self.sigma*(self.T**.5))
+        d2 = d1 - (self.sigma*(self.T**.5))
+        if self.call and self.cash:
+            self.price = math.exp(-(self.r - self.q)*self.T)*phi(d2)
+        elif not self.call and self.cash:
+            self.price = math.exp(-(self.r - self.q)*self.T)*phi(d2*-1)
+        elif self.call and not self.cash:
+            self.price = self.S*math.exp(-(self.r - self.q)*self.T)*phi(d1)
+        else:
+            self.price = self.S*math.exp(-(self.r - self.q)*self.T)*phi(d1*-1)
+        return self.price
 
+    #TODO: Derive formulas for volatility for d1 and d2 to get implied vol.
 
 
 
@@ -2226,13 +2276,9 @@ class EuropeanBS(object):
 #------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    my_option1 = EuropeanBS(S=210.59, sigma=.1404, K=205, T=4.0/365, r=.002175, q=0.0, call=True)
-    print my_option1.price
-    my_option2 = EuropeanBS(S=210.59, sigma=.1404, K=205, T=4.0/365, r=.002175, q=0.0, call=False)
-    print my_option2.price
-    print my_option1.implied_vol(mkt_price=6,precision=5)
-    print my_option1.price
-    print my_option1.sigma
-    print my_option2.implied_vol(mkt_price=1.5,precision=5)
-    print my_option2.price
-    print my_option2.sigma
+    my_option = AmericanBinaryTian(S=50, sigma=.4, K=50, T=1, n=4, r=.03, q=0.0, call=True, cash=True)
+    my_option.print_tree()
+    my_option.cash = False
+    my_option.calc_price()
+    my_option.print_tree()
+    my_option.print_tree(stock=True)
