@@ -2450,6 +2450,44 @@ class LookbackFixedMCLogNormConstVol(object):
         return self.price
 
 
+class LookbackFloatingMCLogNormConstVol(object):
+    # http://finance.bi.no/~bernt/gcc_prog/recipes/recipes/node12.html
+    def __init__(self, S, sigma, T, r, q, call=True):
+        self.S = S
+        self.sigma = sigma
+        self.T = T
+        self.r = r
+        self.q = q
+        self.call = call
+        self.price = 0
+
+    def calc_price(self, num_obs, num_sims):
+        # Uses antithetic path variance reduction
+        dt = self.T/float(num_obs)
+        payoff = 0
+        if self.call:
+            get_X = lambda a, b: min(a, b)
+            payoff_func = lambda a, b: a - b
+        else:
+            get_X = lambda a, b: max(a, b)
+            payoff_func = lambda a, b: b - a
+        for n in xrange(num_sims/2):
+            X1 = self.S
+            X2 = self.S
+            Si1 = self.S
+            Si2 = self.S
+            for i in xrange(num_obs):
+                dWt1 = random.normalvariate(0, 1)
+                dWt2 = dWt1 * -1
+                Si1 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt1*(dt**.5)))
+                Si2 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt2*(dt**.5)))
+                X1 = get_X(X1, Si1)
+                X2 = get_X(X2, Si2)
+            payoff += payoff_func(Si1, X1) + payoff_func(Si2, X2)
+        self.price = math.exp(-(self.r - self.q)*self.T)*(payoff/num_sims)
+        return self.price
+
+
 #------------------------------------------------------------------------------------
 #End
 #------------------------------------------------------------------------------------
@@ -2470,4 +2508,6 @@ if __name__ == '__main__':
     my_option = AsianMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call, geometric=geometric)
     print my_option.calc_price(num_obs=10, num_sims=50000)
     my_option = LookbackFixedMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
+    print my_option.calc_price(num_obs=10, num_sims=50000)
+    my_option = LookbackFloatingMCLogNormConstVol(S=S, sigma=sigma, T=T, r=r, q=q, call=call)
     print my_option.calc_price(num_obs=10, num_sims=50000)
