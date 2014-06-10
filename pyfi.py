@@ -36,6 +36,7 @@ Options - various options are treated as classes in PyFi:
 
 import math
 import copy
+import random
 
 #-------------------------------------------------------------------------------------
 #Private Functions (input error checking)
@@ -92,6 +93,8 @@ def _check_option_error(S, sigma, K, T, n=1, r=0.0, q=0.0, ex=None, call=True, g
 #-------------------------------------------------------------------------------------
 #Functions (pv, fv, irr, macD, modD, convexity)
 #-------------------------------------------------------------------------------------
+
+#General financial functions----------------------------------------------------------
 
 def pv(cash_flows, apr, dt=1):
     """This function calculates the present value of a series of
@@ -269,6 +272,8 @@ def convexity(cash_flows, apr, dt):
         total += ((t+1)*(t+2)*(dt**2)) * weight * (dis_rate**2)
     return total
 
+
+#Special functions - used in classes, or for particular cases ------------------------
 
 def calc_bin_greeks(stock_tree, price_tree, dt):
     delta = (price_tree[1][1] - price_tree[1][0])/(stock_tree[1][1] - stock_tree[1][0])
@@ -2324,15 +2329,145 @@ class EuropeanBinaryBS(object):
     #TODO: Derive formulas for volatility for d1 and d2 to get implied vol.
 
 
+#Options - Monte Carlo---------------------------------------------------------------
+
+class EuropeanMCLogNormConstVol(object):
+    # http://finance.bi.no/~bernt/gcc_prog/recipes/recipes/node12.html
+    def __init__(self, S, sigma, K, T, r, q, call=True):
+        self.S = S
+        self.sigma = sigma
+        self.K = K
+        self.T = T
+        self.r = r
+        self.q = q
+        self.call = call
+        self.price = 0
+
+    def calc_price(self, num_obs, num_sims):
+        # Uses antithetic path variance reduction
+        dt = self.T/float(num_obs)
+        payoff = 0
+        if self.call:
+            payoff_func = lambda a, b: max(a - b, 0)
+        else:
+            payoff_func = lambda a, b: max(b - a, 0)
+        for n in xrange(num_sims/2):
+            Si1, Si2 = self.S, self.S
+            for i in xrange(num_obs):
+                dWt1 = random.normalvariate(0, 1)
+                dWt2 = dWt1 * -1
+                Si1 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt1*(dt**.5)))
+                Si2 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt2*(dt**.5)))
+            payoff += payoff_func(Si1, self.K) + payoff_func(Si2, self.K)
+        self.price = math.exp(-(self.r - self.q)*self.T)*(payoff/num_sims)
+        return self.price
+
+
+class AsianMCLogNormConstVol(object):
+    # http://finance.bi.no/~bernt/gcc_prog/recipes/recipes/node12.html
+    def __init__(self, S, sigma, K, T, r, q, call=True, geometric=True):
+        self.S = S
+        self.sigma = sigma
+        self.K = K
+        self.T = T
+        self.r = r
+        self.q = q
+        self.call = call
+        self.geometric = geometric
+        self.price = 0
+
+    def calc_price(self, num_obs, num_sims):
+        # Uses antithetic path variance reduction
+        dt = self.T/float(num_obs)
+        payoff = 0
+        if self.geometric:
+            base_avg = 1
+            inc_avg_factor = lambda a, b: a * b
+            get_avg = lambda a, b: a**(1.0/b)
+        else:
+            base_avg = 0
+            inc_avg_factor = lambda a, b: a + b
+            get_avg = lambda a, b: a/b
+        if self.call:
+            payoff_func = lambda a, b: max(a - b, 0)
+        else:
+            payoff_func = lambda a, b: max(b - a, 0)
+        for n in xrange(num_sims/2):
+            avg1 = base_avg
+            avg2 = base_avg
+            Si1 = self.S
+            Si2 = self.S
+            for i in xrange(num_obs):
+                dWt1 = random.normalvariate(0, 1)
+                dWt2 = dWt1 * -1
+                Si1 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt1*(dt**.5)))
+                Si2 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt2*(dt**.5)))
+                avg1 = inc_avg_factor(avg1, Si1)
+                avg2 = inc_avg_factor(avg2, Si2)
+            avg1 = get_avg(avg1, num_obs)
+            avg2 = get_avg(avg2, num_obs)
+            payoff += payoff_func(avg1, self.K) + payoff_func(avg2, self.K)
+        self.price = math.exp(-(self.r - self.q)*self.T)*(payoff/num_sims)
+        return self.price
+
+
+class LookbackFixedMCLogNormConstVol(object):
+    # http://finance.bi.no/~bernt/gcc_prog/recipes/recipes/node12.html
+    def __init__(self, S, K, sigma, T, r, q, call=True):
+        self.S = S
+        self.sigma = sigma
+        self.K = K
+        self.T = T
+        self.r = r
+        self.q = q
+        self.call = call
+        self.price = 0
+
+    def calc_price(self, num_obs, num_sims):
+        # Uses antithetic path variance reduction
+        dt = self.T/float(num_obs)
+        payoff = 0
+        if self.call:
+            get_X = lambda a, b: max(a, b)
+            payoff_func = lambda a, b: max(a - b, 0)
+        else:
+            get_X = lambda a, b: min(a, b)
+            payoff_func = lambda a, b: max(b - a, 0)
+        for n in xrange(num_sims/2):
+            X1 = self.S
+            X2 = self.S
+            Si1 = self.S
+            Si2 = self.S
+            for i in xrange(num_obs):
+                dWt1 = random.normalvariate(0, 1)
+                dWt2 = dWt1 * -1
+                Si1 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt1*(dt**.5)))
+                Si2 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt2*(dt**.5)))
+                X1 = get_X(X1, Si1)
+                X2 = get_X(X2, Si2)
+            payoff += payoff_func(X1, self.K) + payoff_func(X2, self.K)
+        self.price = math.exp(-(self.r - self.q)*self.T)*(payoff/num_sims)
+        return self.price
+
 
 #------------------------------------------------------------------------------------
 #End
 #------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    my_option = AmericanBinaryTian(S=50, sigma=.4, K=50, T=1, n=4, r=.03, q=0.0, call=True, cash=True)
-    my_option.print_tree()
-    my_option.cash = False
-    my_option.calc_price()
-    my_option.print_tree()
-    my_option.print_tree(stock=True)
+    S = 100
+    sigma = .25
+    K = 100
+    T = 1
+    r = .1
+    q = 0.0
+    call = True
+    geometric = True
+    base_option = EuropeanBS(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
+    print base_option.price
+    my_option = EuropeanMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
+    print my_option.calc_price(num_obs=10, num_sims=50000)
+    my_option = AsianMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call, geometric=geometric)
+    print my_option.calc_price(num_obs=10, num_sims=50000)
+    my_option = LookbackFixedMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
+    print my_option.calc_price(num_obs=10, num_sims=50000)
