@@ -82,9 +82,6 @@ Thanks Christophe Rougeaux for helping correct the binomial model errors!
 >>> my_bond = Bond(length=5, par_value=1000, coupon_rate=.05, num_annual_coupons=2, ytm=.06)
 >>> my_bond.price()
 957.348985816121
->>> my_bond.price(1050)
->>> my_bond.ytm()
-0.0388993771
 >>> my_bond.info()
 Time to Expiry: 5               #my_bond.length
 Par Value:      $1000           #my_bond.par_value
@@ -95,6 +92,9 @@ YTM:            6.0 percent     #my_bond.ytm()
 macD:           4.47167860758   #my_bond.macD
 modD:           4.34143554134   #my_bond.modD
 Convexity:      22.3047280394   #my_bond.convexity
+>>> my_bond.price(1050)
+>>> my_bond.ytm()
+0.0388993771
 ```
 * **Stock** - creates a stock object. Use `info()` to view the attributes.
 
@@ -140,6 +140,20 @@ market price.
 >>> my_option.implied_vol(13)
 0.4714627488000006
 ```
+
+* **Options - Monte Carlo Models** - creates an option object priced using Monte Carlo methods. All of the methods
+currently use antithetic path variance reduction.
+  * EuropeanMCLogNormConstVol (European option, Monte Carlo method, Lognoraml constant vol. stock movement.)
+  * AsianMCLogNormConstVol
+  * LookbackFixedMCLogNormConstVol
+  * LookbackFloatingLogNormConstVol
+  
+```python
+>>> my_option = AsianMCLogNormConstVol(S=50, sigma=.2, K=50, T=1, r=.03, q=0.0, call=True, geometric=False)
+>>> print my_option.calc_price(num_obs=50, num_sims=100000)
+2.69153640404
+```
+
 
 ####Retrieve Market Data from Yahoo Finance API
 
