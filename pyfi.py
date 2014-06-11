@@ -275,6 +275,7 @@ def convexity(cash_flows, apr, dt):
 
 #Special functions - used in classes, or for particular cases ------------------------
 
+
 def calc_bin_greeks(stock_tree, price_tree, dt):
     delta = (price_tree[1][1] - price_tree[1][0])/(stock_tree[1][1] - stock_tree[1][0])
     if len(stock_tree) >= 2 and len(price_tree) >= 2:
@@ -2382,12 +2383,10 @@ class AsianMCLogNormConstVol(object):
         payoff = 0
         if self.geometric:
             base_avg = 1
-            inc_avg_factor = lambda a, b: a * b
-            get_avg = lambda a, b: a**(1.0/b)
+            inc_avg = lambda a, b, c: (a**(1.0/b)) * c
         else:
             base_avg = 0
-            inc_avg_factor = lambda a, b: a + b
-            get_avg = lambda a, b: a/b
+            inc_avg = lambda a, b, c: (a/b) + c
         if self.call:
             payoff_func = lambda a, b: max(a - b, 0)
         else:
@@ -2402,10 +2401,8 @@ class AsianMCLogNormConstVol(object):
                 dWt2 = dWt1 * -1
                 Si1 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt1*(dt**.5)))
                 Si2 *= math.exp((((self.r-self.q) - (.5*(self.sigma**2))) * dt) + (self.sigma*dWt2*(dt**.5)))
-                avg1 = inc_avg_factor(avg1, Si1)
-                avg2 = inc_avg_factor(avg2, Si2)
-            avg1 = get_avg(avg1, num_obs)
-            avg2 = get_avg(avg2, num_obs)
+                avg1 = inc_avg(Si1, num_obs, avg1)
+                avg2 = inc_avg(Si2, num_obs, avg2)
             payoff += payoff_func(avg1, self.K) + payoff_func(avg2, self.K)
         self.price = math.exp(-(self.r - self.q)*self.T)*(payoff/num_sims)
         return self.price
@@ -2504,10 +2501,10 @@ if __name__ == '__main__':
     base_option = EuropeanBS(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
     print base_option.price
     my_option = EuropeanMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
-    print my_option.calc_price(num_obs=10, num_sims=50000)
+    print my_option.calc_price(num_obs=1, num_sims=50)
     my_option = AsianMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call, geometric=geometric)
-    print my_option.calc_price(num_obs=10, num_sims=50000)
+    print my_option.calc_price(num_obs=10, num_sims=1000)
     my_option = LookbackFixedMCLogNormConstVol(S=S, sigma=sigma, K=K, T=T, r=r, q=q, call=call)
-    print my_option.calc_price(num_obs=10, num_sims=50000)
+    print my_option.calc_price(num_obs=1, num_sims=50)
     my_option = LookbackFloatingMCLogNormConstVol(S=S, sigma=sigma, T=T, r=r, q=q, call=call)
-    print my_option.calc_price(num_obs=10, num_sims=50000)
+    print my_option.calc_price(num_obs=1, num_sims=50)
