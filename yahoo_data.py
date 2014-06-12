@@ -235,7 +235,6 @@ def show_stock_field_codes(by_field=True):
     'k0':	'Year High',
     'j0':	'Year Low',
     'w0':	'Year Range'}
-    print len(get_stock_field_name.keys())
     #Reverse get_stock_field_name dictionary to look up codes for desired fields.
     get_stock_field_code = dict(zip(get_stock_field_name.values(),get_stock_field_name.keys()))
     if by_field:
@@ -467,7 +466,6 @@ def show_industry_detail_codes(by_field=True):
     'Gas_Utilities'                         :912,
     'Water_Utilities'                       :914
     }
-    print len(get_industry_detail_code.keys())
     #Reverse the dictionary to look up industry names by key
     get_industry_detail_name = dict(zip(get_industry_detail_code.values(), get_industry_detail_code.keys()))
     if by_field:
