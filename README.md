@@ -143,7 +143,7 @@ market price.
 
 * **Options - Monte Carlo Models** - creates an option object priced using Monte Carlo methods. All of the methods
 currently use antithetic path variance reduction.
-  * EuropeanMCLogNormConstVol (European option, Monte Carlo method, Lognoraml constant vol. stock movement.)
+  * EuropeanMCLogNormConstVol (European option, Monte Carlo method, lognormal constant vol. stock movement.)
   * AsianMCLogNormConstVol
   * LookbackFixedMCLogNormConstVol
   * LookbackFloatingLogNormConstVol
@@ -163,7 +163,7 @@ given time period either daily, weekly, or monthly.
 * **get_sector_data** - retrieves various attributes for all broad sectors (Financial, Utilities, etc.)
 * **get_industry_data** - retrieves various attributes for a certain industry or sub-industry. Only argument is the 
 industry code - 1 digit indicates a broad industry with data by sub-industry, and 3 digits indicates a sub-industry 
-with data by company. Attributes are the same as those retrieved for get_sector_data.
+with data by company. Attributes are the same as those retrieved for `get_sector_data`.
 
 ```python
 # Get the ask, bid, year range, and market cap for GOOG and LUV
