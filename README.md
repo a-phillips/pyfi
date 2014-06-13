@@ -9,12 +9,21 @@ Thanks Christophe Rougeaux for helping correct the binomial model errors!
 
 ####Functions
 
-* **pv/fv** - returns the present value/future value of a series of cash flows
+* **npv/nfv** - returns the net present value/future value of a series of cash flows
 ```python
 >>> print pv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 566.503678124
 >>> print fv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 610.0625
+```
+
+* **pv/fv/pmt/rate/nper** - returns the present value, future value, payment, interest rate, and number of periods, 
+respectively, for an investment with periodic payments.
+```python
+>>> print pv(payment=100, int_rate=.05, num_payments=10, future_value=0)
+772.173492918
+>>> print pmt(present_value=772.1735, int_rate=.05, num_payments=10, future_value=0)
+100.000000917
 ```
 
 * **irr/mirr** - returns the internal rate of return or modified irr on a series of cash flows
