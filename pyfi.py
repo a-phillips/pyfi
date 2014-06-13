@@ -3,8 +3,13 @@ functions, as well as classes to model certain financial instruments such as bon
 and equity options.
 
 Current Functions:
-pv - returns the present value of a series of cash flows
-fv - returns the future value of a series of cash flows
+npv - returns the net present value of a series of cash flows
+nfv - returns the net future value of a series of cash flows
+pv - returns the pv of an investment with periodic payments
+fv - returns the fv of an investment with periodic payments
+pmt - returns the periodic payment of an investment with periodic payments
+nper - returns the number of periods of an investment with periodic payments
+rate - returns the interest rate of an investment with periodic payments
 irr - returns the Internal Rate of Return (IRR) of a series of cash flows
 mirr - returns the Modified IRR of a series of cash flows
 macD - returns the Macaulay duration of a series fo cash flows
@@ -91,12 +96,12 @@ def _check_option_error(S, sigma, K, T, n=1, r=0.0, q=0.0, ex=None, call=True, g
 
 
 #-------------------------------------------------------------------------------------
-#Functions (pv, fv, irr, macD, modD, convexity)
+#Functions (npv, nfv, irr, macD, modD, convexity)
 #-------------------------------------------------------------------------------------
 
 #General financial functions----------------------------------------------------------
 
-def pv(cash_flows, apr, dt=1):
+def npv(cash_flows, apr, dt=1):
     """This function calculates the present value of a series of
 cash flows. Discounts to time 0, and assumes first cash flow
 happens at first future time step.
@@ -119,7 +124,7 @@ dt: size of the time step of the cash flows in years
     return total
 
 
-def fv(cash_flows, apr, dt=1):
+def nfv(cash_flows, apr, dt=1):
     """This function calculates the future value of a series of
 cash flows. Determines the future value as of the last cash
 flow given.
@@ -132,11 +137,46 @@ dt: size of the time step of the cash flows in years
            (i.e. 1 month = 1/12)
 """
 
-    cf_pv = pv(cash_flows, apr, dt)
+    cf_pv = npv(cash_flows, apr, dt)
     if not cf_pv:
         return None
     #Future value = present value * ((1 + interest rate)**n)
     return cf_pv*((1+(apr*dt))**len(cash_flows))
+
+
+def pv(payment, int_rate, num_payments, future_value):
+    pay_portion = payment*(1-(1/((1+int_rate)**num_payments)))/int_rate
+    fv_portion = future_value/((1+int_rate)**num_payments)
+    present_value = pay_portion + fv_portion
+    return present_value
+
+
+def fv(present_value, payment, int_rate, num_payments):
+    pay_portion = payment*(1-(1/((1+int_rate)**num_payments)))/int_rate
+    future_value = (present_value-pay_portion)*((1+int_rate)**num_payments)
+    return future_value
+
+
+def pmt(present_value, int_rate, num_payments, future_value):
+    num = present_value - (future_value/((1+int_rate)**num_payments))
+    den = (1-(1/((1+int_rate)**num_payments)))/int_rate
+    payment = num/den
+    return payment
+
+
+def nper(present_value, payment, int_rate, future_value):
+    num = math.log(((int_rate*present_value)-payment)/((int_rate*future_value)-payment))
+    den = math.log(1/(1+int_rate))
+    num_payments = int(math.ceil(num/den))
+    return num_payments
+
+
+def rate(present_value, payment, num_payments, future_value):
+    cash_flows = [present_value*-1] + [payment]*num_payments
+    cash_flows[-1] += future_value
+    int_rate = irr(cash_flows)
+    return int_rate
+
 
 
 def irr(cash_flows, dt=1):
@@ -164,13 +204,13 @@ dt: size of the time step of the cash flows in years
     #delta is used below as the step by which the guessed apr changes
     delta = 0.1
     #closest_pv is the best-guess pv which is checked against check_pv using the new apr guess
-    closest_pv = pv(cash_flows=cash_flows, apr=apr, dt=dt)
+    closest_pv = npv(cash_flows=cash_flows, apr=apr, dt=dt)
     #Finding irr to 10 digits if not found exactly - not sure if this is accurate enough
     while abs(delta) >= (10**(-10)):
         if closest_pv == 0:
             return apr
         apr += delta
-        check_pv = round(pv(cash_flows=cash_flows, apr=apr, dt=dt), 10)
+        check_pv = round(npv(cash_flows=cash_flows, apr=apr, dt=dt), 10)
         if abs(closest_pv-check_pv) > abs(closest_pv):
             #Indicates that check_pv and closest_pv have different signs
             #Move guess steps to lower order, switch direction of guesses if check_pv is closer to 0
@@ -213,8 +253,8 @@ dt: the time step between cash flows"""
     if len(outflows) == 1:
         pv_outflows = outflows[0]*-1
     else:
-        pv_outflows = (outflows[0] + pv(outflows[1:], borrow_rate, dt))*-1
-    fv_inflows = fv(inflows, reinv_rate, dt)
+        pv_outflows = (outflows[0] + npv(outflows[1:], borrow_rate, dt))*-1
+    fv_inflows = nfv(inflows, reinv_rate, dt)
     return ((fv_inflows/pv_outflows)**(1.0/n))-1
 
 
@@ -265,7 +305,7 @@ def convexity(cash_flows, apr, dt):
     #Formula source: http://faculty.darden.virginia.edu/conroyb/Valuation/Val2002/F-1238.pdf
 
     dis_rate = 1.0/(1+(apr*dt))
-    P = pv(cash_flows, apr, dt)
+    P = npv(cash_flows, apr, dt)
     total = 0
     for t, pmt in enumerate(cash_flows):
         weight = pmt*(dis_rate**(t+1))/P
@@ -348,29 +388,22 @@ class Amortize(object):
             self.calc_int_rate()
 
     def calc_principal(self):
-        _pay_portion = self.payment*(1-(1/((1+self.int_rate)**self.num_payments)))/self.int_rate
-        _fv_portion = self.future_value/((1+self.int_rate)**self.num_payments)
-        self.principal = _pay_portion + _fv_portion
+        self.principal = pv(self.payment, self.int_rate, self.num_payments, self.future_value)
         self.update_table()
         return self.principal
 
     def calc_future_value(self):
-        _pay_portion = self.payment*(1-(1/((1+self.int_rate)**self.num_payments)))/self.int_rate
-        self.future_value = (self.principal-_pay_portion)*((1+self.int_rate)**self.num_payments)
+        self.future_value = fv(self.principal, self.payment, self.int_rate, self.num_payments)
         self.update_table()
         return self.future_value
 
     def calc_payment(self):
-        _num = self.principal - (self.future_value/((1+self.int_rate)**self.num_payments))
-        _den = (1-(1/((1+self.int_rate)**self.num_payments)))/self.int_rate
-        self.payment = round(_num/_den, 2)
+        self.payment = pmt(self.principal, self.int_rate, self.num_payments, self.future_value)
         self.update_table()
         return self.payment
 
     def calc_num_payments(self):
-        _num = math.log(((self.int_rate*self.principal)-self.payment)/((self.int_rate*self.future_value)-self.payment))
-        _den = math.log(1/(1+self.int_rate))
-        self.num_payments = int(math.ceil(_num/_den))
+        self.num_payments = nper(self.principal, self.payment, self.int_rate, self.future_value)
         self.update_table()
         return self.num_payments
 
@@ -484,7 +517,7 @@ Use the function info() to quickly view the bond's attributes.
 
         #Need to get new price
         dt = 1.0/self.num_annual_coupons
-        self._price = pv(self.cash_flows, self._ytm, dt)
+        self._price = npv(self.cash_flows, self._ytm, dt)
 
         #Need to get new durations/convexity
         self.macD = macD(self.cash_flows, self._ytm, 1.0/self.num_annual_coupons)
