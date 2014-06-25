@@ -9,11 +9,11 @@ Thanks Christophe Rougeaux for helping correct the binomial model errors!
 
 ####Functions
 
-* **npv/nfv** - returns the net present value/future value of a series of cash flows
+* **npv/nfv** - returns the net present value/future value of an arbitrary series of cash flows
 ```python
->>> print pv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
+>>> print npv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 566.503678124
->>> print fv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
+>>> print nfv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 610.0625
 ```
 
