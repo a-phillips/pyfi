@@ -66,6 +66,7 @@ codes - list of the codes for the desired fields. If None, will get all data. Us
 
 
 def get_historical_data(symbol, from_date, to_date, interval):
+    """BUG: GOOG won't return data before 20140327"""
     base_url = 'http://ichart.yahoo.com/table.csv?'
     s = 's=%s&' % symbol
     a = 'a=%s&' % str(from_date.month-1)
@@ -78,12 +79,23 @@ def get_historical_data(symbol, from_date, to_date, interval):
     suffix = 'ignore=.csv'
     total_url = base_url+s+a+b+c+d+e+f+g+suffix
     raw_file = urllib2.urlopen(total_url).read().splitlines()
-    data = {'headers': raw_file[0].split(',')}
-    for line in raw_file[1:]:
+    data = {'Date': [],
+            'Open': [],
+            'High': [],
+            'Low': [],
+            'Close': [],
+            'Volume': [],
+            'Adj Close': []}
+    # Loop backwards since data comes newest to oldest - exclude data at 0 since it's just headers
+    for line in raw_file[:0:-1]:
         line = line.split(',')
-        data_date = date(int(line[0][:4]), int(line[0][5:7]), int(line[0][8:]))
-        line = line[1:]
-        data[data_date] = [float(num) for num in line]
+        data['Date'].append(date(int(line[0][:4]), int(line[0][5:7]), int(line[0][8:])))
+        data['Open'].append(float(line[1]))
+        data['High'].append(float(line[2]))
+        data['Low'].append(float(line[3]))
+        data['Close'].append(float(line[4]))
+        data['Volume'].append(float(line[5]))
+        data['Adj Close'].append(float(line[6]))
     return data
 
 
@@ -631,8 +643,9 @@ def _format_l0(data, i):
 
 
 if __name__ == '__main__':
-    show_industry_detail_codes()
-    show_stock_field_codes()
+    test_data = get_historical_data('LUV',date(2014,5,1), date(2014,6,1), 'd')
+    print test_data['Date']
+    print test_data['Close']
     """
     test_data = get_historical_data('LUV', date(2014, 1, 1), date(2014, 6, 3), 'w')
     print test_data['headers']
