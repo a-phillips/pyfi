@@ -171,7 +171,7 @@ with data by company. Attributes are the same as those retrieved for `get_sector
 [0.0, 19290000.0, 'NA', -0.06488, 'NA', 'NA', 0.556, 'NA', -17.024]
 ```
 
-###Portfolio Optimization
+#####Portfolio Optimization
 * **port_mean/port_var/port_mean_var** - returns the portfolio mean/variance/both
 * **get_W_R_C** - returns the weights, expected returns, and covariances of a portfolio given prices and market caps
 * **fitness** - evaluates a portfolio based on mean, variance, and risk-free rate, using a lambda function input
