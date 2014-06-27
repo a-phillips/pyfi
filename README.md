@@ -1,5 +1,7 @@
 #Welcome to PyFi
 
+**NEW** : Portfolio optimization functionality added to mvo.py (see code source disclaimer at top)
+
 PyFi is a financial modeling module written in Python. It's meant to be an all-encompassing module for both basic
 and advanced financial applications.
 
@@ -10,40 +12,20 @@ Thanks Christophe Rougeaux for helping correct the binomial model errors!
 ####Functions
 
 * **npv/nfv** - returns the net present value/future value of an arbitrary series of cash flows
+* **pv/fv/pmt/rate/nper** - returns the present value, future value, payment, interest rate, and number of periods, 
+respectively, for an investment with periodic payments.
+* **irr/mirr** - returns the internal rate of return or modified irr on a series of cash flows
+* **macD/modD** - returns the Macaulay duration/Modified duration of a series of cash flows
+* **convexity** - returns the convexity of a series of cash flows
 ```python
 >>> print npv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 566.503678124
->>> print nfv(cash_flows=[100, 200, 300], apr=.05, dt=.5)
-610.0625
-```
-
-* **pv/fv/pmt/rate/nper** - returns the present value, future value, payment, interest rate, and number of periods, 
-respectively, for an investment with periodic payments.
-```python
 >>> print pv(payment=100, int_rate=.05, num_payments=10, future_value=0)
 772.173492918
->>> print pmt(present_value=772.1735, int_rate=.05, num_payments=10, future_value=0)
-100.000000917
-```
-
-* **irr/mirr** - returns the internal rate of return or modified irr on a series of cash flows
-```python
 >>> print irr(cash_flows=[-566.503678, 100, 200, 300], dt=.5)
 0.0500000002
->>> print mirr(inflows=[0, 0, 5000, 2000], outflows=[-1000, -4000], reinv_rate=.12, borrow_rate=.1)
-0.179085686035
-```
-
-* **macD/modD** - returns the Macaulay duration/Modified duration of a series of cash flows
-```python
 >>> print macD(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 1.15976846635
->>> print modD(cash_flows=[100, 200, 300], apr=.05, dt=.5)
-1.13148143058
-```
-
-* **convexity** - returns the convexity of a series of cash flows
-```python
 >>> print convexity(cash_flows=[100, 200, 300], apr=.05, dt=.5)
 1.96589018896
 ```
@@ -68,18 +50,6 @@ respectively, for an investment with periodic payments.
    4    |  2309.74  |     2199.75      |     109.99      |           0
 >>> print my_loan.interest_paid[2]
 314.5
->>> my_loan.payment = 2000
->>> my_loan.calc_num_payments()
-6
->>> my_loan.print_table()
-  Time  |  Payment  |  Principal Paid  |  Interest Paid  |  Principal Remaining
----------------------------------------------------------------------------------
-   0    |  2000.0   |      1500.0      |      500.0      |        8500.0
-   1    |  2000.0   |      1575.0      |      425.0      |        6925.0
-   2    |  2000.0   |     1653.75      |     346.25      |        5271.25
-   3    |  2000.0   |     1736.44      |     263.56      |        3534.81
-   4    |  2000.0   |     1823.26      |     176.74      |        1711.55
-   5    |  1797.13  |     1711.55      |      85.58      |          0.0
 ```
 * **Bond** - creates a bond object.
   * Specify the parameters of the bond then, either `price` or `ytm` to initialize the bond. Whichever isn't specified
@@ -105,7 +75,6 @@ Convexity:      22.3047280394   #my_bond.convexity
 >>> my_bond.ytm()
 0.0388993771
 ```
-* **Stock** - creates a stock object. Use `info()` to view the attributes.
 
 * **Options - Binomial Models** - creates an option. The option is priced using a binomial tree. See the docstring
 for each class for its specific use. Binary options can be cash-or-nothing or asset-or-nothing.
@@ -163,7 +132,6 @@ currently use antithetic path variance reduction.
 2.69153640404
 ```
 
-
 ####Retrieve Market Data from Yahoo Finance API
 
 * **get_current_data** - retrieves up to 87 attributes of up to 50 symbols
@@ -173,7 +141,9 @@ given time period either daily, weekly, or monthly.
 * **get_industry_data** - retrieves various attributes for a certain industry or sub-industry. Only argument is the 
 industry code - 1 digit indicates a broad industry with data by sub-industry, and 3 digits indicates a sub-industry 
 with data by company. Attributes are the same as those retrieved for `get_sector_data`.
-
+* **show_stock_field_codes** - displays the attribute codes used by the `get_current_data` query.
+* **show_industry_detail_codes** - displays the codes for each sub-industry used by the `get_industry_data` query.
+* The 1-digit codes for each broad industry can be found in the docstring for the `get_industry_data` function.
 ```python
 # Get the ask, bid, year range, and market cap for GOOG and LUV
 >>> data = get_current_data(['GOOG', 'LUV'], ['a0','b0','w0','j1']) 
@@ -200,13 +170,33 @@ with data by company. Attributes are the same as those retrieved for `get_sector
 >>> print data['Peak Resources Ltd']
 [0.0, 19290000.0, 'NA', -0.06488, 'NA', 'NA', 0.556, 'NA', -17.024]
 ```
-* **show_stock_field_codes** - displays the attribute codes used by the `get_current_data` query.
-* **show_industry_detail_codes** - displays the codes for each sub-industry used by the `get_industry_data` query.
-* The 1-digit codes for each broad industry can be found in the docstring for the `get_industry_data` function.
+
+###Portfolio Optimization
+* **port_mean/port_var/port_mean_var** - returns the portfolio mean/variance/both
+* **get_W_R_C** - returns the weights, expected returns, and covariances of a portfolio given prices and market caps
+* **fitness** - evaluates a portfolio based on mean, variance, and risk-free rate, using a lambda function input
+* **solve_tangency** - returns the tangent portfolio
+* **solve_frontier** - returns the frontier of means, variances, and weights of efficient portfolios
+
+```python
+>>> R = numpy.array([.03, .05, .1, .06])
+>>> C = numpy.array([[.01, .001, .005, .0001],
+...                  [.001, .02, .003, .04],
+...                  [.005, .003, .03, .002],
+...                  [.0001, .04, .002, .025]])
+>>> means, vars, weights = mvo.solve_frontier(R, C, num_points=5)
+>>> for i in xrange(len(means)):
+...     print round(means[i],2), round(vars[i]**.5,2), [round(num,2) for num in weights[i]]
+0.03 0.1 [1.0, -0.0, 0.0, -0.0]
+0.05 0.08 [0.6, -0.0, 0.14, 0.27]
+0.07 0.1 [0.32, -0.0, 0.37, 0.31]
+0.08 0.12 [0.04, -0.0, 0.59, 0.36]
+0.1 0.17 [0.0, 0.0, 1.0, 0.0]
+```
 
 ###Future Functionality:
 
-* **Portfolio Analysis** - real-time quotes, market information, allocation optimization
+* **Additional Portfolio Analysis** - more optimization techniques
 * **Interest Rate Models** - HJM, BGM, CIR, etc.
 * **Monte Carlo Simulation** - framework for option pricing
 * **Finite Differences*** - framework for option pricing
