@@ -1,6 +1,9 @@
 __author__ = 'aphillips'
 
 from pyfi import *
+import copy
+import random
+import math
 
 #Various functions used to assist in options pricing
 

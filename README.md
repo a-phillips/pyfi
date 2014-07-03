@@ -1,11 +1,14 @@
 #Welcome to PyFi
 
-**NEW** : Portfolio optimization functionality added to mvo.py (see code source disclaimer at top)
+**NEW** : Portfolio optimization functionality added to mvo.py
 
 PyFi is a financial modeling module written in Python. It's meant to be an all-encompassing module for both basic
 and advanced financial applications.
 
-Thanks Christophe Rougeaux for helping correct the binomial model errors!
+Thanks to:
+ 
+* Christophe Rougeaux for helping correct binomial model errors
+* Ondrej Martinsky for great mean-variance optimization code and intuitive explanations at quantandfinancial.com
 
 ###Current Functionality
 

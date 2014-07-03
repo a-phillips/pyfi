@@ -1,6 +1,5 @@
-"""This is the primary module of the PyFi package. This module includes basic and advanced financial
-functions, as well as classes to model certain financial instruments such as bonds, amortizing loans,
-and equity options.
+"""This is the main module of the PyFi package. It contains some of the most basic and commonly
+used financial functions.
 
 Current Functions:
 npv - returns the net present value of a series of cash flows
@@ -23,25 +22,9 @@ Amortize - amortizes a beginning principal based on the arguments given. All att
 Bond - creates a bond object. Price and YTM can be changed or calculated. Duration and convexity are also calculated
        automatically.
 Stock - holds current value and volatility of a stock.
-Options - various options are treated as classes in PyFi:
-    - Binomial. Note Binary options can be either cash-or-nothing or asset-or-nothing. Delta, Gamma, and Theta are
-      calculated automatically.
-        - EuropeanCRR / EuropeanBinaryCRR
-        - AmericanCRR / AmericanBinaryCRR
-        - BermudanCRR / BermudanBinaryCRR
-        - EuropeanJR / EuropeanBinaryJR
-        - AmericanJR / AmericanBinaryJR
-        - BermudanJR / BermudanBinaryJR
-        - EuropeanTian / EuropeanBinaryTian
-        - AmericanTian / AmericanBinaryTian
-        - BermudanTian / BermudanBinaryTian
-    - Closed-Form.
-        - EuropeanBS / EuropeanBinaryBS
 """
 
 import math
-import copy
-import random
 
 #-------------------------------------------------------------------------------------
 #Private Functions (input error checking)
@@ -279,10 +262,6 @@ def convexity(cash_flows, apr, dt):
         weight = pmt*(dis_rate**(t+1))/P
         total += ((t+1)*(t+2)*(dt**2)) * weight * (dis_rate**2)
     return total
-
-
-#Special functions - used in classes, or for particular cases ------------------------
-
 
 
 #------------------------------------------------------------------------------------
